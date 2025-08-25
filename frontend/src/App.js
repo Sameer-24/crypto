@@ -598,6 +598,131 @@ const Dashboard = () => {
             </div>
           </TabsContent>
 
+          {/* WiFi Scanner Tab */}
+          <TabsContent value="wifi" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* WiFi Network Discovery */}
+              <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Wifi className="w-5 h-5 mr-2" />
+                      Discovered WiFi Networks ({wifiNetworks.length})
+                    </div>
+                    <Button
+                      onClick={fetchWifiNetworks}
+                      size="sm"
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-1" />
+                      Refresh
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+                  {wifiNetworks.map((network, index) => (
+                    <div key={index} className="p-3 rounded-lg bg-black/20 border border-gray-700/50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <p className="text-white font-medium">{network.ssid}</p>
+                          <p className="text-gray-400 text-sm">{network.bssid}</p>
+                          <p className="text-gray-500 text-xs">{network.security} • {network.frequency}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge className={
+                            network.threat_level === 'Critical' ? 'bg-red-700 text-white' :
+                            network.threat_level === 'High' ? 'bg-red-600 text-white' :
+                            network.threat_level === 'Medium' ? 'bg-yellow-600 text-white' :
+                            'bg-green-600 text-white'
+                          }>
+                            {network.threat_level}
+                          </Badge>
+                          <div className={`w-3 h-3 rounded-full ${
+                            network.signal_strength > -50 ? 'bg-green-500' :
+                            network.signal_strength > -70 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`} title={`Signal: ${network.signal_strength} dBm`} />
+                        </div>
+                      </div>
+                      {network.threats && network.threats.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {network.threats.map((threat, idx) => (
+                            <Badge key={idx} className="bg-red-800 text-white text-xs">
+                              {threat}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mt-2 text-xs text-gray-400">
+                        Channel {network.channel} • Signal: {network.signal_strength} dBm
+                      </div>
+                    </div>
+                  ))}
+                  {wifiNetworks.length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      <Wifi className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No WiFi networks detected</p>
+                      <p className="text-sm">Click refresh to scan for networks</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* WiFi Security Tips */}
+              <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <ShieldAlert className="w-5 h-5 mr-2" />
+                    WiFi Security Assessment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-red-900/20 border border-red-600/30">
+                      <div>
+                        <p className="text-white font-medium">Open Networks</p>
+                        <p className="text-gray-400 text-sm">Unencrypted connections</p>
+                      </div>
+                      <Badge className="bg-red-600 text-white">
+                        {wifiNetworks.filter(n => n.security === 'Open').length}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-900/20 border border-yellow-600/30">
+                      <div>
+                        <p className="text-white font-medium">Weak Encryption</p>
+                        <p className="text-gray-400 text-sm">WEP/WPA networks</p>
+                      </div>
+                      <Badge className="bg-yellow-600 text-white">
+                        {wifiNetworks.filter(n => ['WEP', 'WPA'].includes(n.security)).length}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-900/20 border border-green-600/30">
+                      <div>
+                        <p className="text-white font-medium">Secure Networks</p>
+                        <p className="text-gray-400 text-sm">WPA2/WPA3 encryption</p>
+                      </div>
+                      <Badge className="bg-green-600 text-white">
+                        {wifiNetworks.filter(n => ['WPA2-PSK', 'WPA3', 'WPA2'].includes(n.security)).length}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-600">
+                    <h4 className="text-white font-medium mb-2">Security Recommendations</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• Avoid connecting to open WiFi networks</li>
+                      <li>• Use VPN on public networks</li>
+                      <li>• Verify network names with venue staff</li>
+                      <li>• Disable auto-connect features</li>
+                      <li>• Use mobile hotspot when possible</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Malware Analysis Tab */}
           <TabsContent value="malware" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
