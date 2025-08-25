@@ -1557,6 +1557,11 @@ async def get_enhanced_dashboard_stats():
     malware_detected = await db.malware_analyses.count_documents({"threat_detected": True})
     malicious_urls = await db.url_analyses.count_documents({"is_malicious": True})
     
+    # New inbox statistics
+    pending_urls = await db.security_inbox.count_documents({"scan_status": "pending"})
+    inbox_threats = await db.security_inbox.count_documents({"threat_detected": True})
+    total_inbox_entries = await db.security_inbox.count_documents({})
+    
     return {
         "total_devices": total_devices,
         "active_devices": active_devices,
@@ -1564,7 +1569,10 @@ async def get_enhanced_dashboard_stats():
         "wifi_threats": wifi_threats,
         "unresolved_alerts": unresolved_alerts,
         "malware_detected": malware_detected,
-        "malicious_urls": malicious_urls
+        "malicious_urls": malicious_urls,
+        "pending_urls": pending_urls,
+        "inbox_threats": inbox_threats,
+        "total_inbox_entries": total_inbox_entries
     }
 
 @api_router.post("/alerts/{alert_id}/resolve")
