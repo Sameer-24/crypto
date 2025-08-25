@@ -1224,9 +1224,129 @@ class MalwareScanner:
             except:
                 pass
 
+# Security Inbox for URL Management
+class SecurityInbox:
+    def __init__(self, malware_scanner):
+        self.malware_scanner = malware_scanner
+        self.inbox_cache = {}
+        
+    async def add_url_to_inbox(self, url: str, user_note: str = None):
+        """Add URL to security inbox for analysis"""
+        try:
+            # Check if URL already exists in inbox
+            existing = await db.security_inbox.find_one({"url": url})
+            if existing:
+                return {"status": "exists", "id": existing["id"]}
+            
+            # Create inbox entry
+            inbox_entry = {
+                "id": str(uuid.uuid4()),
+                "url": url,
+                "user_note": user_note,
+                "added_date": datetime.now(timezone.utc).isoformat(),
+                "scan_status": "pending",
+                "scan_result": None,
+                "threat_detected": False,
+                "priority": "medium"
+            }
+            
+            # Insert into database
+            await db.security_inbox.insert_one(inbox_entry)
+            
+            return {"status": "added", "id": inbox_entry["id"]}
+            
+        except Exception as e:
+            logging.error(f"Error adding URL to inbox: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    async def scan_inbox_url(self, inbox_id: str):
+        """Scan a URL from the inbox"""
+        try:
+            # Get inbox entry
+            entry = await db.security_inbox.find_one({"id": inbox_id})
+            if not entry:
+                return {"status": "not_found"}
+            
+            # Update scan status
+            await db.security_inbox.update_one(
+                {"id": inbox_id},
+                {"$set": {"scan_status": "scanning"}}
+            )
+            
+            # Perform URL scan
+            scan_result = await self.malware_scanner.scan_url(entry["url"])
+            
+            # Update inbox entry with results
+            await db.security_inbox.update_one(
+                {"id": inbox_id},
+                {
+                    "$set": {
+                        "scan_status": "completed",
+                        "scan_result": self.prepare_for_mongo(scan_result.dict()),
+                        "threat_detected": scan_result.is_malicious,
+                        "scanned_date": datetime.now(timezone.utc).isoformat(),
+                        "priority": "high" if scan_result.is_malicious else "low"
+                    }
+                }
+            )
+            
+            # Also save to regular URL analyses
+            await db.url_analyses.insert_one(self.prepare_for_mongo(scan_result.dict()))
+            
+            return {"status": "scanned", "result": scan_result.dict()}
+            
+        except Exception as e:
+            logging.error(f"Error scanning inbox URL: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    async def get_inbox_entries(self, status: str = None, limit: int = 50):
+        """Get inbox entries with optional filtering"""
+        try:
+            query = {}
+            if status:
+                query["scan_status"] = status
+            
+            entries = await db.security_inbox.find(query).sort("added_date", -1).limit(limit).to_list(limit)
+            return entries
+            
+        except Exception as e:
+            logging.error(f"Error fetching inbox entries: {e}")
+            return []
+    
+    async def batch_scan_urls(self, urls: list):
+        """Batch scan multiple URLs"""
+        results = []
+        
+        for url in urls:
+            # Add to inbox
+            add_result = await self.add_url_to_inbox(url, "Batch scan")
+            if add_result["status"] in ["added", "exists"]:
+                # Scan the URL
+                scan_result = await self.scan_inbox_url(add_result["id"])
+                results.append({
+                    "url": url,
+                    "status": scan_result["status"],
+                    "threat_detected": scan_result.get("result", {}).get("is_malicious", False)
+                })
+        
+        return results
+    
+    def prepare_for_mongo(self, data):
+        """Prepare data for MongoDB storage"""
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if isinstance(value, datetime):
+                    data[key] = value.isoformat()
+                elif isinstance(value, list) and value and isinstance(value[0], datetime):
+                    data[key] = [v.isoformat() if isinstance(v, datetime) else v for v in value]
+        return data
+
 # Initialize enhanced scanners
 network_scanner = EnhancedNetworkScanner()
 malware_scanner = MalwareScanner()
+
+# Initialize security inbox
+security_inbox = SecurityInbox(malware_scanner)
 
 # Enhanced API Routes
 @api_router.get("/")
