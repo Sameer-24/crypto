@@ -257,6 +257,56 @@ const Dashboard = () => {
     }
   };
 
+  const handleAddToInbox = async () => {
+    if (!inboxUrl.trim()) return;
+
+    try {
+      setAddingToInbox(true);
+      const formData = new FormData();
+      formData.append('url', inboxUrl);
+      formData.append('note', inboxNote);
+
+      const response = await axios.post(`${API}/inbox/add-url`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('Added to inbox:', response.data);
+      await fetchInboxEntries();
+      await fetchStats();
+      setInboxUrl('');
+      setInboxNote('');
+    } catch (error) {
+      console.error('Error adding to inbox:', error);
+      alert('Error adding to inbox: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setAddingToInbox(false);
+    }
+  };
+
+  const handleScanFromInbox = async (inboxId) => {
+    try {
+      await axios.post(`${API}/inbox/scan/${inboxId}`);
+      await fetchInboxEntries();
+      await fetchStats();
+      await fetchUrlAnalyses();
+    } catch (error) {
+      console.error('Error scanning from inbox:', error);
+      alert('Error scanning URL: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  const handleDeleteInboxEntry = async (inboxId) => {
+    try {
+      await axios.delete(`${API}/inbox/entry/${inboxId}`);
+      await fetchInboxEntries();
+      await fetchStats();
+    } catch (error) {
+      console.error('Error deleting inbox entry:', error);
+    }
+  };
+
   const resolveAlert = async (alertId) => {
     try {
       await axios.post(`${API}/alerts/${alertId}/resolve`);
