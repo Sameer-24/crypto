@@ -405,7 +405,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
           <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-medium text-gray-300 flex items-center">
@@ -487,6 +487,18 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold text-purple-400">{stats.malicious_urls || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-gray-300 flex items-center">
+                <FileText className="w-3 h-3 mr-1" />
+                Inbox
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold text-cyan-400">{stats.total_inbox_entries || 0}</div>
             </CardContent>
           </Card>
         </div>
