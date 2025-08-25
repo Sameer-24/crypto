@@ -85,7 +85,9 @@ class CryptoPulseComprehensiveTester:
             if status == 200:
                 try:
                     response_data = json.loads(response_text)
-                    if response_data.get('status') == 'added':
+                    if response_data.get('status') in ['added', 'exists']:  # Both are valid responses
+                        if response_data.get('status') == 'exists':
+                            print(f"   URL already exists: {url}")
                         added_ids.append(response_data.get('id'))
                         self.log_result(f"Add URL to inbox: {url}", True, response_data)
                     else:
