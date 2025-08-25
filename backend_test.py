@@ -164,6 +164,7 @@ class CryptoPulseEnhancedAPITester:
             "scan/url", 
             200,
             data=data,
+            files={},  # This will trigger form data mode
             timeout=60
         )
         
