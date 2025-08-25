@@ -171,6 +171,24 @@ const Dashboard = () => {
     }
   }, []);
 
+  const fetchInboxEntries = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/inbox/entries?limit=20`);
+      setInboxEntries(response.data.entries || []);
+    } catch (error) {
+      console.error('Error fetching inbox entries:', error);
+    }
+  }, []);
+
+  const fetchWifiNetworks = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/wifi/networks`);
+      setWifiNetworks(response.data.networks || []);
+    } catch (error) {
+      console.error('Error fetching WiFi networks:', error);
+    }
+  }, []);
+
   const startNetworkScan = async () => {
     try {
       setScanning(true);
