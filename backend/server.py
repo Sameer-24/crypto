@@ -1538,6 +1538,10 @@ async def get_network_scans():
 async def get_malware_analyses():
     """Get malware analysis history"""
     analyses = await db.malware_analyses.find().sort("scan_date", -1).to_list(100)
+    # Remove MongoDB ObjectId fields for JSON serialization
+    for analysis in analyses:
+        if '_id' in analysis:
+            del analysis['_id']
     return analyses
 
 @api_router.get("/url/analyses")
