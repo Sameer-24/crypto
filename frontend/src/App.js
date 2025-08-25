@@ -505,10 +505,14 @@ const Dashboard = () => {
 
         {/* Tabbed Interface for Different Features */}
         <Tabs defaultValue="network" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-black/30 border-gray-700">
+          <TabsList className="grid w-full grid-cols-6 bg-black/30 border-gray-700">
             <TabsTrigger value="network" className="text-white data-[state=active]:bg-cyan-600">
               <Network className="w-4 h-4 mr-2" />
               Network Monitor
+            </TabsTrigger>
+            <TabsTrigger value="wifi" className="text-white data-[state=active]:bg-orange-600">
+              <Wifi className="w-4 h-4 mr-2" />
+              WiFi Scanner
             </TabsTrigger>
             <TabsTrigger value="malware" className="text-white data-[state=active]:bg-red-600">
               <Bug className="w-4 h-4 mr-2" />
@@ -517,6 +521,10 @@ const Dashboard = () => {
             <TabsTrigger value="url" className="text-white data-[state=active]:bg-purple-600">
               <Globe className="w-4 h-4 mr-2" />
               URL Scanner
+            </TabsTrigger>
+            <TabsTrigger value="inbox" className="text-white data-[state=active]:bg-cyan-500">
+              <FileText className="w-4 h-4 mr-2" />
+              Security Inbox
             </TabsTrigger>
             <TabsTrigger value="alerts" className="text-white data-[state=active]:bg-yellow-600">
               <AlertTriangle className="w-4 h-4 mr-2" />
