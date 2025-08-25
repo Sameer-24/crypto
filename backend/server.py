@@ -144,15 +144,18 @@ class ThreatAlert(BaseModel):
     source_ip: Optional[str] = None
     target: Optional[str] = None
 
-# Enhanced Network Scanner with DoS Detection
+# Enhanced Network Scanner with DoS Detection and Performance Optimization
 class EnhancedNetworkScanner:
     def __init__(self):
         self.known_devices = {}
         self.scanning = False
+        self.scan_progress = 0
+        self.scan_cache = {}  # Cache for recent scan results
+        self.cache_timeout = 300  # 5 minutes cache timeout
         self.dos_monitor = DOSMonitor()
         self.wifi_monitor = WiFiThreatMonitor()
         self.malware_scanner = MalwareScanner()
-        self.executor = ThreadPoolExecutor(max_workers=4)
+        self.executor = ThreadPoolExecutor(max_workers=8)  # Increased workers for better performance
 
     def get_network_interfaces(self):
         """Get available network interfaces"""
