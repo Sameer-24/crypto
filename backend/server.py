@@ -496,15 +496,23 @@ class EnhancedNetworkScanner:
         return data
 
     async def scan_network(self):
-        """Enhanced network scanning with threat detection"""
+        """Enhanced network scanning with threat detection and performance optimization"""
         if self.scanning:
             return {"status": "already_scanning"}
         
         self.scanning = True
+        self.scan_progress = 0
         scan_start = datetime.now(timezone.utc)
         
         try:
-            # Get network interfaces
+            # Broadcast scan start
+            await manager.broadcast(json.dumps({
+                "type": "scan_started",
+                "progress": 0,
+                "message": "Starting network discovery..."
+            }))
+            
+            # Get network interfaces with caching
             interfaces = self.get_network_interfaces()
             if not interfaces:
                 return {"status": "no_interfaces"}
@@ -512,73 +520,107 @@ class EnhancedNetworkScanner:
             all_devices = []
             malware_count = 0
             threats_count = 0
+            wifi_networks = []
+            wifi_threats = []
+            
+            self.scan_progress = 10
+            await manager.broadcast(json.dumps({
+                "type": "scan_progress", 
+                "progress": self.scan_progress,
+                "message": "Scanning WiFi networks..."
+            }))
+            
+            # Enhanced WiFi Network Scanning
+            try:
+                wifi_networks = self.scan_wifi_networks()
+                wifi_threats = self.analyze_wifi_security(wifi_networks)
+                logging.info(f"Found {len(wifi_networks)} WiFi networks with {len(wifi_threats)} threats")
+            except Exception as e:
+                logging.error(f"WiFi scanning error: {e}")
             
             # Start DoS monitoring in background
             self.dos_monitor.start_monitoring()
             
-            # Scan each interface
-            for interface_info in interfaces[:1]:  # Scan first interface
+            self.scan_progress = 20
+            await manager.broadcast(json.dumps({
+                "type": "scan_progress", 
+                "progress": self.scan_progress,
+                "message": "Discovering network devices..."
+            }))
+            
+            # Scan each interface (optimized)
+            for idx, interface_info in enumerate(interfaces[:2]):  # Limit to 2 interfaces for performance
                 network_range = self.calculate_network_range(
                     interface_info['ip'], 
                     interface_info['netmask']
                 )
                 
-                # Perform enhanced ARP scan
-                devices = self.perform_arp_scan(network_range)
+                # Perform enhanced ARP scan with progress updates
+                devices = await self.perform_optimized_arp_scan(network_range)
                 
-                # Process discovered devices
-                for device_data in devices:
-                    mac = device_data["mac"]
-                    is_new_device = mac not in self.known_devices
+                self.scan_progress = 30 + (idx * 20)
+                await manager.broadcast(json.dumps({
+                    "type": "scan_progress", 
+                    "progress": self.scan_progress,
+                    "message": f"Analyzing {len(devices)} discovered devices..."
+                }))
+                
+                # Process discovered devices in parallel batches
+                batch_size = 5
+                for i in range(0, len(devices), batch_size):
+                    device_batch = devices[i:i+batch_size]
                     
-                    # Enhanced port scan
-                    open_ports = self.quick_port_scan(device_data["ip"])
+                    # Process batch in parallel
+                    batch_futures = []
+                    for device_data in device_batch:
+                        future = self.executor.submit(self.process_single_device, device_data)
+                        batch_futures.append((future, device_data))
                     
-                    # WiFi threat detection
-                    wifi_threats = self.detect_wifi_threats(device_data)
+                    # Collect results
+                    for future, device_data in batch_futures:
+                        try:
+                            device_info = future.result(timeout=10)  # 10 second timeout per device
+                            if device_info:
+                                all_devices.append(device_info)
+                                self.known_devices[device_info["mac_address"]] = device_info
+                                
+                                # Count threats
+                                if device_info.get("is_rogue") or device_info.get("is_wifi_threat"):
+                                    threats_count += 1
+                                    
+                        except Exception as e:
+                            logging.error(f"Device processing error for {device_data}: {e}")
                     
-                    # Device type detection
-                    device_type = self.detect_device_type(
-                        mac, device_data["hostname"], open_ports
-                    )
-                    
-                    # Create enhanced device object
-                    device_info = {
-                        "mac_address": mac,
-                        "ip_address": device_data["ip"],
-                        "hostname": device_data["hostname"],
-                        "device_type": device_type,
-                        "open_ports": open_ports,
-                        "is_wifi_threat": len(wifi_threats) > 0,
-                        "suspicious_activity": wifi_threats,
-                        "connection_count": len(open_ports) * 2,  # Estimated
-                        "is_rogue": is_new_device and self.is_suspicious_device(device_data, open_ports)
-                    }
-                    
-                    # Calculate enhanced risk score
-                    device_info["risk_score"] = self.calculate_risk_score(device_info, is_new_device)
-                    
-                    # Update device in database
-                    await self.update_device_database(device_info, is_new_device)
-                    
-                    # Count threats
-                    if device_info["is_rogue"] or device_info["is_wifi_threat"]:
-                        threats_count += 1
-                    
-                    all_devices.append(device_info)
-                    self.known_devices[mac] = device_info
+                    # Update progress
+                    progress = min(50 + int((i / len(devices)) * 30), 80)
+                    self.scan_progress = progress
+                    await manager.broadcast(json.dumps({
+                        "type": "scan_progress", 
+                        "progress": self.scan_progress,
+                        "message": f"Processed {min(i + batch_size, len(devices))} of {len(devices)} devices..."
+                    }))
+            
+            self.scan_progress = 85
+            await manager.broadcast(json.dumps({
+                "type": "scan_progress", 
+                "progress": self.scan_progress,
+                "message": "Finalizing threat analysis..."
+            }))
             
             # Stop DoS monitoring
             dos_alerts = self.dos_monitor.stop_monitoring()
             
+            # Update all devices in database
+            await self.batch_update_devices(all_devices)
+            
             # Create enhanced scan record
             scan_duration = (datetime.now(timezone.utc) - scan_start).total_seconds()
             scan_record = NetworkScan(
-                scan_type="Enhanced_ARP_Discovery",
-                target_network=network_range,
+                scan_type="Enhanced_ARP_Discovery_v2",
+                target_network=network_range if 'network_range' in locals() else "auto-detected",
                 devices_found=len(all_devices),
                 malware_detected=malware_count,
-                threats_found=threats_count,
+                threats_found=threats_count + len(wifi_threats),
                 duration_seconds=scan_duration,
                 status="Completed"
             )
@@ -586,28 +628,158 @@ class EnhancedNetworkScanner:
             # Save scan to database
             await db.network_scans.insert_one(self.prepare_for_mongo(scan_record.dict()))
             
-            # Broadcast results
+            self.scan_progress = 100
+            # Broadcast final results with enhanced data
             broadcast_data = {
                 "type": "enhanced_scan_complete",
                 "devices": all_devices,
-                "threats_found": threats_count,
+                "wifi_networks": wifi_networks,
+                "wifi_threats": wifi_threats,
+                "threats_found": threats_count + len(wifi_threats),
                 "dos_alerts": len(dos_alerts),
-                "scan_info": self.prepare_for_mongo(scan_record.dict())
+                "scan_info": self.prepare_for_mongo(scan_record.dict()),
+                "progress": 100
             }
             await manager.broadcast(json.dumps(broadcast_data))
             
             return {
                 "status": "completed",
                 "devices_found": len(all_devices),
-                "threats_found": threats_count,
+                "wifi_networks_found": len(wifi_networks),
+                "threats_found": threats_count + len(wifi_threats),
                 "scan_duration": scan_duration
             }
             
         except Exception as e:
             logging.error(f"Enhanced network scan error: {e}")
+            await manager.broadcast(json.dumps({
+                "type": "scan_error",
+                "error": str(e),
+                "progress": 0
+            }))
             return {"status": "error", "message": str(e)}
         finally:
             self.scanning = False
+            self.scan_progress = 0
+
+    def process_single_device(self, device_data):
+        """Process a single device for optimization"""
+        try:
+            mac = device_data["mac"]
+            is_new_device = mac not in self.known_devices
+            
+            # Enhanced port scan with timeout
+            open_ports = self.parallel_port_scan(device_data["ip"])
+            
+            # WiFi threat detection
+            wifi_threats = self.detect_wifi_threats(device_data)
+            
+            # Device type detection
+            device_type = self.detect_device_type(
+                mac, device_data["hostname"], open_ports
+            )
+            
+            # Create enhanced device object
+            device_info = {
+                "mac_address": mac,
+                "ip_address": device_data["ip"],
+                "hostname": device_data["hostname"],
+                "device_type": device_type,
+                "open_ports": open_ports,
+                "is_wifi_threat": len(wifi_threats) > 0,
+                "suspicious_activity": wifi_threats,
+                "connection_count": len(open_ports) * 2,  # Estimated
+                "is_rogue": is_new_device and self.is_suspicious_device(device_data, open_ports)
+            }
+            
+            # Calculate enhanced risk score
+            device_info["risk_score"] = self.calculate_risk_score(device_info, is_new_device)
+            
+            return device_info
+            
+        except Exception as e:
+            logging.error(f"Single device processing error: {e}")
+            return None
+
+    async def perform_optimized_arp_scan(self, network_range):
+        """Optimized ARP scan with better performance"""
+        try:
+            # Use asyncio for better performance
+            loop = asyncio.get_event_loop()
+            devices = await loop.run_in_executor(
+                self.executor, 
+                self.perform_arp_scan, 
+                network_range
+            )
+            return devices
+        except Exception as e:
+            logging.error(f"Optimized ARP scan error: {e}")
+            return []
+
+    async def batch_update_devices(self, all_devices):
+        """Batch update devices for better database performance"""
+        try:
+            for device_info in all_devices:
+                mac = device_info["mac_address"]
+                is_new_device = mac not in self.known_devices or not await db.devices.find_one({"mac_address": mac})
+                
+                if is_new_device:
+                    device = Device(**device_info)
+                    await db.devices.insert_one(self.prepare_for_mongo(device.dict()))
+                    
+                    # Create alerts for threats (optimized)
+                    await self.create_threat_alerts(device_info, device.id)
+                else:
+                    # Bulk update existing device
+                    await db.devices.update_one(
+                        {"mac_address": mac},
+                        {
+                            "$set": {
+                                "last_seen": datetime.now(timezone.utc).isoformat(),
+                                "ip_address": device_info["ip_address"],
+                                "hostname": device_info["hostname"],
+                                "open_ports": device_info["open_ports"],
+                                "risk_score": device_info["risk_score"],
+                                "is_wifi_threat": device_info["is_wifi_threat"],
+                                "suspicious_activity": device_info["suspicious_activity"],
+                                "connection_count": device_info["connection_count"]
+                            }
+                        }
+                    )
+        except Exception as e:
+            logging.error(f"Batch device update error: {e}")
+
+    async def create_threat_alerts(self, device_info, device_id):
+        """Create threat alerts for new devices"""
+        try:
+            alerts_to_create = []
+            
+            if device_info.get("is_rogue"):
+                alert = ThreatAlert(
+                    device_id=device_id,
+                    alert_type="Rogue Device Detected",
+                    severity="High" if device_info["risk_score"] > 70 else "Medium",
+                    description=f"Potentially rogue device detected: {device_info['ip_address']} ({device_info['mac_address']})",
+                    source_ip=device_info['ip_address']
+                )
+                alerts_to_create.append(self.prepare_for_mongo(alert.dict()))
+            
+            if device_info.get("is_wifi_threat"):
+                alert = ThreatAlert(
+                    device_id=device_id,
+                    alert_type="WiFi Threat Detected",
+                    severity="High",
+                    description=f"WiFi threat detected: {', '.join(device_info.get('suspicious_activity', []))}",
+                    source_ip=device_info['ip_address']
+                )
+                alerts_to_create.append(self.prepare_for_mongo(alert.dict()))
+            
+            # Batch insert alerts
+            if alerts_to_create:
+                await db.threat_alerts.insert_many(alerts_to_create)
+                
+        except Exception as e:
+            logging.error(f"Alert creation error: {e}")
 
     async def update_device_database(self, device_info, is_new):
         """Update device information in database with threat alerts"""
