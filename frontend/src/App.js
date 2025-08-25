@@ -71,12 +71,28 @@ const Dashboard = () => {
       console.log('WebSocket message:', data);
       
       switch(data.type) {
+        case 'scan_started':
+          setScanning(true);
+          setScanProgress(0);
+          break;
+        case 'scan_progress':
+          setScanProgress(data.progress);
+          break;
         case 'enhanced_scan_complete':
           setScanning(false);
+          setScanProgress(100);
           setLastScan(new Date().toLocaleTimeString());
           fetchDevices();
           fetchStats();
           fetchAlerts();
+          if (data.wifi_networks) {
+            setWifiNetworks(data.wifi_networks);
+          }
+          break;
+        case 'scan_error':
+          setScanning(false);
+          setScanProgress(0);
+          console.error('Scan error:', data.error);
           break;
         case 'malware_detected':
           fetchMalwareAnalyses();
@@ -87,11 +103,13 @@ const Dashboard = () => {
           fetchUrlAnalyses();
           fetchStats();
           fetchAlerts();
+          fetchInboxEntries();
           break;
         default:
           // Handle legacy scan_complete messages
           if (data.type === 'scan_complete') {
             setScanning(false);
+            setScanProgress(100);
             setLastScan(new Date().toLocaleTimeString());
             fetchDevices();
             fetchStats();
