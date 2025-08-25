@@ -287,11 +287,12 @@ class NetworkScanner:
             await db.network_scans.insert_one(self.prepare_for_mongo(scan_record.dict()))
             
             # Broadcast results to connected clients
-            await manager.broadcast(json.dumps({
+            broadcast_data = {
                 "type": "scan_complete",
                 "devices": all_devices,
-                "scan_info": scan_record.dict()
-            }))
+                "scan_info": self.prepare_for_mongo(scan_record.dict())
+            }
+            await manager.broadcast(json.dumps(broadcast_data))
             
             return {
                 "status": "completed",
