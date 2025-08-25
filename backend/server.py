@@ -1307,6 +1307,10 @@ class SecurityInbox:
                 query["scan_status"] = status
             
             entries = await db.security_inbox.find(query).sort("added_date", -1).limit(limit).to_list(limit)
+            # Remove MongoDB ObjectId fields for JSON serialization
+            for entry in entries:
+                if '_id' in entry:
+                    del entry['_id']
             return entries
             
         except Exception as e:
