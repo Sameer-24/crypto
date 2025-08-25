@@ -1548,6 +1548,10 @@ async def get_malware_analyses():
 async def get_url_analyses():
     """Get URL analysis history"""
     analyses = await db.url_analyses.find().sort("scan_date", -1).to_list(100)
+    # Remove MongoDB ObjectId fields for JSON serialization
+    for analysis in analyses:
+        if '_id' in analysis:
+            del analysis['_id']
     return analyses
 
 @api_router.get("/dashboard/stats")
