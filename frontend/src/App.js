@@ -41,6 +41,7 @@ const Dashboard = () => {
   const [alerts, setAlerts] = useState([]);
   const [stats, setStats] = useState({});
   const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
   const [lastScan, setLastScan] = useState(null);
   const [wsConnected, setWsConnected] = useState(false);
   const [malwareAnalyses, setMalwareAnalyses] = useState([]);
@@ -48,6 +49,11 @@ const Dashboard = () => {
   const [fileScanning, setFileScanning] = useState(false);
   const [urlScanning, setUrlScanning] = useState(false);
   const [urlToScan, setUrlToScan] = useState("");
+  const [inboxEntries, setInboxEntries] = useState([]);
+  const [inboxUrl, setInboxUrl] = useState("");
+  const [inboxNote, setInboxNote] = useState("");
+  const [wifiNetworks, setWifiNetworks] = useState([]);
+  const [addingToInbox, setAddingToInbox] = useState(false);
   const fileInputRef = useRef(null);
 
   // WebSocket connection with enhanced message handling
