@@ -29,3 +29,7 @@ netifaces>=0.11.0
 psutil>=5.9.0
 websockets>=12.0
 asyncio>=3.4.3
+vt-py>=0.18.2
+aiofiles>=23.2.1
+python-magic>=0.4.27
+aiohttp>=3.9.1
