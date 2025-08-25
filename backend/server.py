@@ -434,20 +434,8 @@ class EnhancedNetworkScanner:
         return min(max(risk_score, 0), 100)
 
     def quick_port_scan(self, ip, common_ports=[22, 23, 53, 80, 135, 139, 443, 445, 993, 995, 8080, 3389, 5900]):
-        """Enhanced port scan with more ports"""
-        open_ports = []
-        for port in common_ports:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(1)
-            try:
-                result = sock.connect_ex((ip, port))
-                if result == 0:
-                    open_ports.append(port)
-            except:
-                pass
-            finally:
-                sock.close()
-        return open_ports
+        """Enhanced port scan with more ports - DEPRECATED: Use parallel_port_scan instead"""
+        return self.parallel_port_scan(ip, common_ports)
 
     def detect_wifi_threats(self, device_data):
         """Detect WiFi-related threats"""
