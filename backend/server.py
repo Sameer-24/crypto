@@ -1359,6 +1359,70 @@ async def start_enhanced_network_scan():
     result = await network_scanner.scan_network()
     return result
 
+@api_router.get("/scan/progress")
+async def get_scan_progress():
+    """Get current scan progress"""
+    return {
+        "scanning": network_scanner.scanning,
+        "progress": network_scanner.scan_progress
+    }
+
+@api_router.get("/wifi/networks")
+async def get_wifi_networks():
+    """Get discovered WiFi networks"""
+    try:
+        networks = network_scanner.scan_wifi_networks()
+        threats = network_scanner.analyze_wifi_security(networks)
+        return {
+            "networks": networks,
+            "threats_summary": threats,
+            "total_networks": len(networks),
+            "threat_count": len(threats)
+        }
+    except Exception as e:
+        logging.error(f"WiFi networks fetch error: {e}")
+        return {"networks": [], "threats_summary": [], "total_networks": 0, "threat_count": 0}
+
+# Security Inbox API Endpoints
+@api_router.post("/inbox/add-url")
+async def add_url_to_inbox(url: str = Form(...), note: str = Form(None)):
+    """Add URL to security inbox"""
+    result = await security_inbox.add_url_to_inbox(url, note)
+    return result
+
+@api_router.get("/inbox/entries")
+async def get_inbox_entries(status: str = None, limit: int = 50):
+    """Get inbox entries"""
+    entries = await security_inbox.get_inbox_entries(status, limit)
+    return {"entries": entries, "total": len(entries)}
+
+@api_router.post("/inbox/scan/{inbox_id}")
+async def scan_inbox_url(inbox_id: str):
+    """Scan URL from inbox"""
+    result = await security_inbox.scan_inbox_url(inbox_id)
+    return result
+
+@api_router.post("/inbox/batch-scan")
+async def batch_scan_urls(urls: List[str]):
+    """Batch scan multiple URLs"""
+    if len(urls) > 10:  # Limit batch size
+        raise HTTPException(status_code=400, detail="Maximum 10 URLs per batch")
+    
+    results = await security_inbox.batch_scan_urls(urls)
+    return {"results": results, "total_scanned": len(results)}
+
+@api_router.delete("/inbox/entry/{inbox_id}")
+async def delete_inbox_entry(inbox_id: str):
+    """Delete entry from inbox"""
+    try:
+        result = await db.security_inbox.delete_one({"id": inbox_id})
+        if result.deleted_count > 0:
+            return {"status": "deleted"}
+        else:
+            raise HTTPException(status_code=404, detail="Entry not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/scan/file")
 async def scan_file_for_malware(file: UploadFile = File(...)):
     """Scan uploaded file for malware"""
