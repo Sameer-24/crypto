@@ -968,7 +968,7 @@ async def scan_file_for_malware(file: UploadFile = File(...)):
         analysis_result = await malware_scanner.scan_file(str(file_path), file.filename)
         
         # Save analysis result to database
-        await db.malware_analyses.insert_one(malware_scanner.prepare_for_mongo(analysis_result.dict()))
+        await db.malware_analyses.insert_one(network_scanner.prepare_for_mongo(analysis_result.dict()))
         
         # Clean up temporary file
         try:
