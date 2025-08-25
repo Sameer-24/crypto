@@ -29,8 +29,8 @@ class CryptoPulseEnhancedAPITester:
             if method == 'GET':
                 response = requests.get(url, headers=headers, timeout=timeout)
             elif method == 'POST':
-                if files:
-                    # For file uploads, don't use json parameter
+                if files is not None:
+                    # For file uploads or form data, don't use json parameter
                     response = requests.post(url, data=data, files=files, timeout=timeout)
                 else:
                     response = requests.post(url, json=data, headers=headers, timeout=timeout)
