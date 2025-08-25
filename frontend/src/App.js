@@ -30,7 +30,9 @@ import {
   XCircle,
   Clock,
   Download,
-  Trash2
+  Trash2,
+  Plus,
+  Mail
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -355,6 +357,15 @@ const Dashboard = () => {
 
   const formatTimestamp = (timestamp) => {
     return new Date(timestamp).toLocaleString();
+  };
+
+  const getInboxStatusColor = (status) => {
+    switch(status) {
+      case 'completed': return 'bg-green-600 text-white';
+      case 'scanning': return 'bg-blue-600 text-white animate-pulse';
+      case 'pending': return 'bg-gray-600 text-white';
+      default: return 'bg-gray-600 text-white';
+    }
   };
 
   return (
@@ -913,6 +924,209 @@ const Dashboard = () => {
                       <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No URL analyses yet</p>
                       <p className="text-sm">Enter a URL to start analysis</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Security Inbox Tab */}
+          <TabsContent value="inbox" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Add URL to Inbox */}
+              <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Plus className="w-5 h-5 mr-2" />
+                    Add Website to Check
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Enter website URL to check"
+                      value={inboxUrl}
+                      onChange={(e) => setInboxUrl(e.target.value)}
+                      className="bg-black/20 border-gray-600 text-white placeholder-gray-400"
+                      disabled={addingToInbox}
+                    />
+                    <Textarea
+                      placeholder="Add note (optional)"
+                      value={inboxNote}
+                      onChange={(e) => setInboxNote(e.target.value)}
+                      className="bg-black/20 border-gray-600 text-white placeholder-gray-400 min-h-[80px]"
+                      disabled={addingToInbox}
+                    />
+                    <Button
+                      onClick={handleAddToInbox}
+                      disabled={addingToInbox || !inboxUrl.trim()}
+                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white"
+                    >
+                      {addingToInbox ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add to Security Inbox
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-gray-600">
+                    <h4 className="text-white font-medium mb-2">Security Inbox Features</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• Queue URLs for security analysis</li>
+                      <li>• Track scanning status and results</li>
+                      <li>• Batch scan multiple websites</li>
+                      <li>• Manage threat detection history</li>
+                      <li>• Export security reports</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Inbox Status Summary */}
+              <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Mail className="w-5 h-5 mr-2" />
+                    Inbox Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-blue-900/20 border border-blue-600/30">
+                      <div>
+                        <p className="text-white font-medium">Pending Scans</p>
+                        <p className="text-gray-400 text-sm">Waiting for analysis</p>
+                      </div>
+                      <Badge className="bg-blue-600 text-white">
+                        {inboxEntries.filter(entry => entry.scan_status === 'pending').length}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-900/20 border border-green-600/30">
+                      <div>
+                        <p className="text-white font-medium">Clean URLs</p>
+                        <p className="text-gray-400 text-sm">Safe websites</p>
+                      </div>
+                      <Badge className="bg-green-600 text-white">
+                        {inboxEntries.filter(entry => entry.scan_status === 'completed' && !entry.threat_detected).length}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-red-900/20 border border-red-600/30">
+                      <div>
+                        <p className="text-white font-medium">Threats Found</p>
+                        <p className="text-gray-400 text-sm">Malicious websites</p>
+                      </div>
+                      <Badge className="bg-red-600 text-white">
+                        {inboxEntries.filter(entry => entry.threat_detected).length}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-600">
+                    <Button
+                      onClick={fetchInboxEntries}
+                      size="sm"
+                      className="w-full bg-gray-600 hover:bg-gray-700 text-white"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Refresh Inbox
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Inbox Entries List */}
+              <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <FileText className="w-5 h-5 mr-2" />
+                    Security Inbox ({inboxEntries.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+                  {inboxEntries.map((entry) => (
+                    <div key={entry.id} className="p-3 rounded-lg bg-black/20 border border-gray-700/50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <p className="text-white font-medium text-sm truncate">{entry.url}</p>
+                          <p className="text-gray-400 text-xs">{formatTimestamp(entry.added_date)}</p>
+                          {entry.user_note && (
+                            <p className="text-gray-500 text-xs mt-1 italic">"{entry.user_note}"</p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge className={getInboxStatusColor(entry.scan_status)}>
+                            {entry.scan_status}
+                          </Badge>
+                          {entry.threat_detected && (
+                            <Badge className="bg-red-600 text-white text-xs">THREAT</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="flex space-x-2">
+                          {entry.scan_status === 'pending' && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleScanFromInbox(entry.id)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                            >
+                              <Scan className="w-3 h-3 mr-1" />
+                              Scan Now
+                            </Button>
+                          )}
+                          {entry.scan_result && entry.scan_result.virustotal_link && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(entry.scan_result.virustotal_link, '_blank')}
+                              className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => handleDeleteInboxEntry(entry.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white text-xs"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      
+                      {entry.scan_result && (
+                        <div className="mt-2 pt-2 border-t border-gray-600/50">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">Detection Ratio:</span>
+                            <span className="text-white">{entry.scan_result.detection_ratio}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">Risk Level:</span>
+                            <Badge className={getRiskBadgeColor(entry.scan_result.risk_level)} size="xs">
+                              {entry.scan_result.risk_level}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {inboxEntries.length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No entries in security inbox</p>
+                      <p className="text-sm">Add a website URL to start checking</p>
                     </div>
                   )}
                 </CardContent>
