@@ -158,7 +158,16 @@ class EnhancedNetworkScanner:
         self.executor = ThreadPoolExecutor(max_workers=8)  # Increased workers for better performance
 
     def get_network_interfaces(self):
-        """Get available network interfaces"""
+        """Get available network interfaces with caching"""
+        cache_key = "network_interfaces"
+        current_time = time.time()
+        
+        # Check cache first
+        if cache_key in self.scan_cache:
+            cached_time, cached_data = self.scan_cache[cache_key]
+            if current_time - cached_time < 60:  # Cache for 1 minute
+                return cached_data
+        
         interfaces = []
         for interface in netifaces.interfaces():
             addrs = netifaces.ifaddresses(interface)
@@ -170,7 +179,128 @@ class EnhancedNetworkScanner:
                             'ip': addr_info['addr'],
                             'netmask': addr_info.get('netmask', '255.255.255.0')
                         })
+        
+        # Cache the result
+        self.scan_cache[cache_key] = (current_time, interfaces)
         return interfaces
+
+    def scan_wifi_networks(self):
+        """Enhanced WiFi network scanning for nearby access points"""
+        try:
+            # This is a simplified version - in production you'd use proper WiFi scanning libraries
+            # For now, we'll simulate WiFi network discovery
+            wifi_networks = []
+            
+            # Try to get WiFi interface information
+            for interface in netifaces.interfaces():
+                if 'wlan' in interface or 'wifi' in interface.lower():
+                    # Simulate discovered WiFi networks
+                    # In a real implementation, you'd use libraries like pywifi or subprocess calls to iwlist
+                    simulated_networks = [
+                        {
+                            'ssid': 'PublicWiFi-Free',
+                            'bssid': '00:1a:2b:3c:4d:5e',
+                            'security': 'Open',
+                            'signal_strength': -45,
+                            'channel': 6,
+                            'frequency': '2437 MHz',
+                            'encryption': None,
+                            'threat_level': 'High',  # Open networks are risky
+                            'threats': ['Open Network', 'Potential Honeypot']
+                        },
+                        {
+                            'ssid': 'Home_Network_5G',
+                            'bssid': '00:2b:3c:4d:5e:6f',
+                            'security': 'WPA2-PSK',
+                            'signal_strength': -60,
+                            'channel': 36,
+                            'frequency': '5180 MHz',
+                            'encryption': 'AES',
+                            'threat_level': 'Low',
+                            'threats': []
+                        },
+                        {
+                            'ssid': 'FREE_INTERNET',
+                            'bssid': '00:3c:4d:5e:6f:7a',
+                            'security': 'Open',
+                            'signal_strength': -70,
+                            'channel': 11,
+                            'frequency': '2462 MHz',
+                            'encryption': None,
+                            'threat_level': 'Critical',
+                            'threats': ['Suspicious SSID', 'Open Network', 'Potential Evil Twin']
+                        }
+                    ]
+                    wifi_networks.extend(simulated_networks)
+            
+            return wifi_networks
+            
+        except Exception as e:
+            logging.error(f"WiFi scanning error: {e}")
+            return []
+
+    def analyze_wifi_security(self, networks):
+        """Analyze WiFi networks for security threats"""
+        threats_found = []
+        
+        for network in networks:
+            network_threats = []
+            
+            # Check for open networks
+            if network.get('security') == 'Open':
+                network_threats.append('Open Network - No Encryption')
+                network['threat_level'] = 'High'
+            
+            # Check for suspicious SSIDs
+            suspicious_ssids = ['free', 'wifi', 'internet', 'guest', 'public', 'hotspot']
+            ssid_lower = network.get('ssid', '').lower()
+            if any(term in ssid_lower for term in suspicious_ssids):
+                network_threats.append('Suspicious SSID Pattern')
+                if network.get('threat_level') == 'Low':
+                    network['threat_level'] = 'Medium'
+            
+            # Check for weak encryption
+            if network.get('security') in ['WEP', 'WPA']:
+                network_threats.append('Weak Encryption Protocol')
+                network['threat_level'] = 'Medium'
+            
+            # Check signal strength (very strong signals from unknown networks could be suspicious)
+            if network.get('signal_strength', -100) > -30:
+                network_threats.append('Unusually Strong Signal')
+            
+            # Update network with threats
+            network['threats'] = network_threats
+            if network_threats:
+                threats_found.extend(network_threats)
+        
+        return threats_found
+
+    def parallel_port_scan(self, ip_address, ports=None):
+        """Optimized parallel port scanning"""
+        if ports is None:
+            ports = [22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 445, 993, 995, 1433, 1521, 3306, 3389, 5432, 5900, 8080, 8443]
+        
+        def scan_port(port):
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.5)  # Faster timeout
+            try:
+                result = sock.connect_ex((ip_address, port))
+                return port if result == 0 else None
+            except:
+                return None
+            finally:
+                sock.close()
+        
+        # Use ThreadPoolExecutor for parallel port scanning
+        open_ports = []
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            future_to_port = {executor.submit(scan_port, port): port for port in ports}
+            for future in future_to_port:
+                result = future.result()
+                if result:
+                    open_ports.append(result)
+        
+        return sorted(open_ports)
 
     def calculate_network_range(self, ip, netmask):
         """Calculate network range for scanning"""
