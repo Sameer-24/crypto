@@ -666,6 +666,46 @@ class EnhancedNetworkScanner:
             self.scanning = False
             self.scan_progress = 0
 
+    def process_single_device_fast(self, device_data):
+        """Process a single device with optimized performance"""
+        try:
+            mac = device_data["mac"]
+            is_new_device = mac not in self.known_devices
+            
+            # Fast port scan with reduced port list
+            open_ports = self.parallel_port_scan(device_data["ip"], 
+                                                 ports=[22, 80, 443, 135, 139, 445, 3389])  # Essential ports only
+            
+            # WiFi threat detection
+            wifi_threats = self.detect_wifi_threats(device_data)
+            
+            # Device type detection
+            device_type = self.detect_device_type(
+                mac, device_data["hostname"], open_ports
+            )
+            
+            # Create optimized device object
+            device_info = {
+                "mac_address": mac,
+                "ip_address": device_data["ip"],
+                "hostname": device_data["hostname"],
+                "device_type": device_type,
+                "open_ports": open_ports,
+                "is_wifi_threat": len(wifi_threats) > 0,
+                "suspicious_activity": wifi_threats,
+                "connection_count": len(open_ports) * 2,  # Estimated
+                "is_rogue": is_new_device and self.is_suspicious_device(device_data, open_ports)
+            }
+            
+            # Calculate enhanced risk score
+            device_info["risk_score"] = self.calculate_risk_score(device_info, is_new_device)
+            
+            return device_info
+            
+        except Exception as e:
+            logging.error(f"Fast device processing error: {e}")
+            return None
+
     def process_single_device(self, device_data):
         """Process a single device for optimization"""
         try:
