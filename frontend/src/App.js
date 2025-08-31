@@ -133,6 +133,31 @@ const Dashboard = () => {
     return () => ws.close();
   }, []);
 
+  // Keep-alive mechanism to prevent backend from sleeping
+  useEffect(() => {
+    const keepAlive = async () => {
+      try {
+        await axios.get(`${API}/health`, { timeout: 10000 });
+        console.log('✅ Keep-alive ping successful');
+      } catch (error) {
+        console.warn('⚠️ Keep-alive ping failed:', error.message);
+      }
+    };
+
+    // Initial ping after 30 seconds
+    const initialTimer = setTimeout(keepAlive, 30000);
+    
+    // Set up interval to ping every 5 minutes (300000ms)
+    const keepAliveInterval = setInterval(keepAlive, 300000);
+    
+    console.log('🚀 Frontend keep-alive mechanism activated');
+    
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(keepAliveInterval);
+    };
+  }, []);
+
   const fetchDevices = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/devices`);
