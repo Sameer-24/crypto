@@ -119,6 +119,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ PASSED: /api/wifi/networks endpoint working perfectly. Real WiFi scanning functional with system commands (nmcli, iwlist, iw). Found 3 networks with proper threat analysis. Response time 59.9ms (excellent). All required network properties present (ssid, bssid, security, signal_strength, channel, threat_level). Security analysis working with threat levels and open network detection. Minor: Environment analysis field missing but core functionality working."
+      - working: true
+        agent: "testing"
+        comment: "✅ RE-VERIFIED AFTER RESTART: /api/wifi/networks endpoint confirmed working after service restart and dependency fixes. Response time 130.2ms (excellent). Found 3 networks with complete threat analysis. All required properties present (ssid, bssid, security, signal_strength, channel, threat_level). Security analysis operational with High/Low threat levels. Open network detection working (2/3 networks identified as open). Real WiFi scanning with system commands fully functional."
         
   - task: "Current WiFi Connection Analysis"
     implemented: true
