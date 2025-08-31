@@ -793,40 +793,227 @@ class EnhancedNetworkScanner:
         return quality
 
     def analyze_wifi_security(self, networks):
-        """Analyze WiFi networks for security threats"""
+        """Enhanced WiFi security analysis with comprehensive threat detection"""
         threats_found = []
+        network_analysis = {}
         
+        # Analyze each network
         for network in networks:
             network_threats = []
+            risk_score = 0
             
             # Check for open networks
-            if network.get('security') == 'Open':
+            security = network.get('security', '').upper()
+            if 'OPEN' in security or security == '' or network.get('encryption') is None:
                 network_threats.append('Open Network - No Encryption')
+                network['threat_level'] = 'Critical'
+                risk_score += 40
+            
+            # Check for weak encryption protocols
+            elif 'WEP' in security:
+                network_threats.append('WEP Encryption - Easily Breakable')
                 network['threat_level'] = 'High'
+                risk_score += 30
+            elif 'WPA' in security and 'WPA2' not in security and 'WPA3' not in security:
+                network_threats.append('WPA Encryption - Deprecated')
+                network['threat_level'] = 'Medium'
+                risk_score += 20
+            elif 'WPA2' in security:
+                network['threat_level'] = 'Low'
+                risk_score += 5
+            elif 'WPA3' in security:
+                network['threat_level'] = 'Very Low'
+                risk_score += 0
             
             # Check for suspicious SSIDs
-            suspicious_ssids = ['free', 'wifi', 'internet', 'guest', 'public', 'hotspot']
+            suspicious_patterns = [
+                'free', 'wifi', 'internet', 'guest', 'public', 'hotspot', 
+                'open', 'default', 'linksys', 'netgear', 'dlink', 'test',
+                'admin', 'password', 'login', 'setup'
+            ]
             ssid_lower = network.get('ssid', '').lower()
-            if any(term in ssid_lower for term in suspicious_ssids):
-                network_threats.append('Suspicious SSID Pattern')
-                if network.get('threat_level') == 'Low':
-                    network['threat_level'] = 'Medium'
             
-            # Check for weak encryption
-            if network.get('security') in ['WEP', 'WPA']:
-                network_threats.append('Weak Encryption Protocol')
+            for pattern in suspicious_patterns:
+                if pattern in ssid_lower:
+                    network_threats.append(f'Suspicious SSID Pattern: "{pattern}"')
+                    risk_score += 15
+                    if network.get('threat_level') == 'Low':
+                        network['threat_level'] = 'Medium'
+                    break
+            
+            # Check for potential evil twin attacks
+            ssid = network.get('ssid', '')
+            if ssid:
+                similar_networks = [n for n in networks if n.get('ssid') == ssid and n.get('bssid') != network.get('bssid')]
+                if len(similar_networks) > 0:
+                    network_threats.append('Potential Evil Twin - Multiple networks with same SSID')
+                    risk_score += 25
+                    network['threat_level'] = 'High'
+            
+            # Check signal strength anomalies
+            signal_strength = network.get('signal_strength', -100)
+            if signal_strength > -30:
+                network_threats.append('Unusually Strong Signal - Possible Close Range Attack')
+                risk_score += 15
+            elif signal_strength < -90:
+                network_threats.append('Very Weak Signal - Connection Issues Expected')
+                risk_score += 5
+            
+            # Check for hidden network indicators
+            if not network.get('ssid') or network.get('ssid').strip() == '':
+                network_threats.append('Hidden Network - SSID Not Broadcast')
+                risk_score += 10
+            
+            # Check channel congestion
+            channel = network.get('channel', 0)
+            if channel:
+                same_channel_networks = [n for n in networks if n.get('channel') == channel]
+                if len(same_channel_networks) > 5:
+                    network_threats.append(f'Channel Congestion - {len(same_channel_networks)} networks on channel {channel}')
+                    risk_score += 10
+            
+            # Special checks for current connection
+            if network.get('is_current'):
+                network_threats.extend(self.analyze_current_connection_security(network))
+                
+                # DNS hijacking check
+                if network.get('dns_hijacking_suspected'):
+                    network_threats.append('DNS Hijacking Suspected')
+                    risk_score += 35
+                    network['threat_level'] = 'Critical'
+                
+                # Connection quality issues
+                quality = network.get('connection_quality', {})
+                if quality.get('overall_score', 100) < 50:
+                    network_threats.append('Poor Connection Quality')
+                    risk_score += 10
+            
+            # Determine final threat level based on risk score
+            if risk_score >= 60:
+                network['threat_level'] = 'Critical'
+            elif risk_score >= 40:
+                network['threat_level'] = 'High'
+            elif risk_score >= 20:
                 network['threat_level'] = 'Medium'
+            elif risk_score >= 5:
+                network['threat_level'] = 'Low'
+            else:
+                network['threat_level'] = 'Very Low'
             
-            # Check signal strength (very strong signals from unknown networks could be suspicious)
-            if network.get('signal_strength', -100) > -30:
-                network_threats.append('Unusually Strong Signal')
-            
-            # Update network with threats
+            # Update network with threats and risk info
             network['threats'] = network_threats
+            network['risk_score'] = min(risk_score, 100)
+            
             if network_threats:
                 threats_found.extend(network_threats)
+                network_analysis[network.get('ssid', 'Unknown')] = {
+                    'threat_count': len(network_threats),
+                    'risk_score': risk_score,
+                    'bssid': network.get('bssid')
+                }
+        
+        # Overall network environment analysis
+        environment_threats = self.analyze_network_environment(networks)
+        threats_found.extend(environment_threats)
         
         return threats_found
+
+    def analyze_current_connection_security(self, current_network):
+        """Analyze security of the currently connected network"""
+        connection_threats = []
+        
+        try:
+            # Check gateway security
+            gateway = current_network.get('gateway')
+            if gateway:
+                # Check if gateway is using default IP ranges that might indicate default setup
+                default_gateways = ['192.168.1.1', '192.168.0.1', '10.0.0.1', '172.16.0.1']
+                if gateway in default_gateways:
+                    connection_threats.append('Default Gateway IP - Possible Default Configuration')
+            
+            # Check DNS servers
+            dns_servers = current_network.get('dns_servers', [])
+            if dns_servers:
+                # Check for suspicious DNS servers
+                suspicious_dns = []
+                for dns in dns_servers:
+                    # Check if DNS is not from known good providers
+                    good_dns_ranges = [
+                        '8.8.8', '8.8.4',  # Google
+                        '1.1.1', '1.0.0',  # Cloudflare
+                        '208.67.222', '208.67.220',  # OpenDNS
+                        '9.9.9.9', '149.112.112'  # Quad9
+                    ]
+                    
+                    if not any(dns.startswith(good_range) for good_range in good_dns_ranges):
+                        if not dns.startswith('192.168.') and not dns.startswith('10.') and not dns.startswith('172.'):
+                            suspicious_dns.append(dns)
+                
+                if suspicious_dns:
+                    connection_threats.append(f'Suspicious DNS Servers: {", ".join(suspicious_dns)}')
+            
+            # Check for internet connectivity issues
+            if not current_network.get('internet_connectivity'):
+                connection_threats.append('No Internet Connectivity')
+            elif not current_network.get('dns_working'):
+                connection_threats.append('DNS Resolution Failed')
+            
+            # Check latency issues
+            latency = current_network.get('latency_ms')
+            if latency:
+                if latency > 500:
+                    connection_threats.append(f'High Network Latency: {latency}ms')
+                elif latency > 200:
+                    connection_threats.append(f'Elevated Network Latency: {latency}ms')
+            
+        except Exception as e:
+            logging.error(f"Current connection security analysis error: {e}")
+        
+        return connection_threats
+
+    def analyze_network_environment(self, networks):
+        """Analyze the overall WiFi environment for security issues"""
+        environment_threats = []
+        
+        try:
+            # Check for too many open networks
+            open_networks = [n for n in networks if n.get('threat_level') in ['Critical', 'High'] and 'Open Network' in str(n.get('threats', []))]
+            if len(open_networks) > 3:
+                environment_threats.append(f'High Risk Environment - {len(open_networks)} open networks detected')
+            
+            # Check for potential rogue access points
+            suspicious_count = len([n for n in networks if n.get('threat_level') in ['Critical', 'High']])
+            if suspicious_count > len(networks) * 0.3:  # More than 30% suspicious
+                environment_threats.append('Potentially Hostile Environment - High concentration of suspicious networks')
+            
+            # Check for channel overcrowding
+            channel_usage = {}
+            for network in networks:
+                channel = network.get('channel', 0)
+                if channel:
+                    channel_usage[channel] = channel_usage.get(channel, 0) + 1
+            
+            overcrowded_channels = [ch for ch, count in channel_usage.items() if count > 6]
+            if overcrowded_channels:
+                environment_threats.append(f'Channel Overcrowding detected on channels: {", ".join(map(str, overcrowded_channels))}')
+            
+            # Check for potential coordinated attacks (multiple networks with similar patterns)
+            ssid_patterns = {}
+            for network in networks:
+                ssid = network.get('ssid', '')
+                if ssid:
+                    # Extract potential pattern (first few chars)
+                    pattern = ssid[:5].lower()
+                    ssid_patterns[pattern] = ssid_patterns.get(pattern, 0) + 1
+            
+            suspicious_patterns = [pattern for pattern, count in ssid_patterns.items() if count > 3]
+            if suspicious_patterns:
+                environment_threats.append('Potential Coordinated Network Deployment Detected')
+            
+        except Exception as e:
+            logging.error(f"Network environment analysis error: {e}")
+        
+        return environment_threats
 
     def parallel_port_scan(self, ip_address, ports=None):
         """Highly optimized parallel port scanning"""
