@@ -932,13 +932,13 @@ class MalwareScanner:
         return None
 
     async def scan_file(self, file_path: str, filename: str) -> MalwareAnalysis:
-        """Scan file with VirusTotal"""
+        """Scan file with VirusTotal using thread-safe approach"""
         try:
             # Calculate file hashes
             file_hash = await self.calculate_file_hash(file_path)
             file_size = os.path.getsize(file_path)
             
-            if not self.vt_client:
+            if not self.vt_api_key:
                 # Fallback analysis without VirusTotal
                 return MalwareAnalysis(
                     file_hash=file_hash,
@@ -950,10 +950,14 @@ class MalwareScanner:
                     scan_results={"error": "VirusTotal not available"}
                 )
             
-            # Check if file exists in VirusTotal database
+            # Check if file exists in VirusTotal database using thread-safe approach
             try:
+                def get_file_object():
+                    with vt.Client(self.vt_api_key) as client:
+                        return client.get_object(f"/files/{file_hash}")
+                
                 file_obj = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda: self.vt_client.get_object(f"/files/{file_hash}")
+                    self.executor, get_file_object
                 )
                 
                 # Parse scan results
