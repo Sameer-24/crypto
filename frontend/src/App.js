@@ -187,12 +187,47 @@ const Dashboard = () => {
 
   const fetchWifiNetworks = useCallback(async () => {
     try {
+      setWifiScanning(true);
       const response = await axios.get(`${API}/wifi/networks`);
       setWifiNetworks(response.data.networks || []);
+      setCurrentWifiConnection(response.data.current_connection);
+      setWifiEnvironmentAnalysis(response.data.environment_analysis || {});
     } catch (error) {
       console.error('Error fetching WiFi networks:', error);
+    } finally {
+      setWifiScanning(false);
     }
   }, []);
+
+  const fetchCurrentWifiConnection = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/wifi/current-connection`);
+      if (response.data.connected) {
+        setCurrentWifiConnection(response.data.connection_details);
+      } else {
+        setCurrentWifiConnection(null);
+      }
+    } catch (error) {
+      console.error('Error fetching current WiFi connection:', error);
+    }
+  }, []);
+
+  const rescanWifiNetworks = async () => {
+    try {
+      setWifiScanning(true);
+      const response = await axios.post(`${API}/wifi/rescan`);
+      if (response.data.status === 'success') {
+        // Fetch updated results
+        setTimeout(() => {
+          fetchWifiNetworks();
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error rescanning WiFi networks:', error);
+    } finally {
+      setTimeout(() => setWifiScanning(false), 2000);
+    }
+  };
 
   const startNetworkScan = async () => {
     try {
