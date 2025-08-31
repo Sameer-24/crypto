@@ -2172,19 +2172,123 @@ async def get_scan_progress():
 
 @api_router.get("/wifi/networks")
 async def get_wifi_networks():
-    """Get discovered WiFi networks"""
+    """Get discovered WiFi networks with enhanced security analysis"""
     try:
         networks = network_scanner.scan_wifi_networks()
         threats = network_scanner.analyze_wifi_security(networks)
+        
+        # Separate current connection info
+        current_connection = None
+        other_networks = []
+        
+        for network in networks:
+            if network.get('is_current'):
+                current_connection = network
+            else:
+                other_networks.append(network)
+        
         return {
+            "networks": other_networks,
+            "current_connection": current_connection,
+            "threats_summary": threats,
+            "total_networks": len(networks),
+            "threat_count": len(threats),
+            "environment_analysis": {
+                "total_scanned": len(networks),
+                "open_networks": len([n for n in networks if 'Open Network' in str(n.get('threats', []))]),
+                "critical_threats": len([n for n in networks if n.get('threat_level') == 'Critical']),
+                "high_threats": len([n for n in networks if n.get('threat_level') == 'High']),
+                "current_connected": current_connection is not None
+            }
+        }
+    except Exception as e:
+        logging.error(f"WiFi networks fetch error: {e}")
+        return {
+            "networks": [], 
+            "current_connection": None,
+            "threats_summary": [], 
+            "total_networks": 0, 
+            "threat_count": 0,
+            "environment_analysis": {
+                "total_scanned": 0,
+                "open_networks": 0,
+                "critical_threats": 0,
+                "high_threats": 0,
+                "current_connected": False
+            }
+        }
+
+@api_router.get("/wifi/current-connection")
+async def get_current_wifi_connection():
+    """Get detailed information about the current WiFi connection"""
+    try:
+        current_connection = network_scanner.get_current_wifi_connection()
+        
+        if current_connection.get('connected'):
+            # Perform additional security analysis on current connection
+            connection_analysis = {
+                **current_connection,
+                "security_assessment": network_scanner.analyze_current_connection_security({
+                    **current_connection,
+                    'is_current': True
+                }),
+                "recommendations": network_scanner.get_connection_recommendations(current_connection)
+            }
+            
+            return {
+                "connected": True,
+                "connection_details": connection_analysis,
+                "status": "success"
+            }
+        else:
+            return {
+                "connected": False,
+                "connection_details": None,
+                "status": "not_connected",
+                "message": "No active WiFi connection detected"
+            }
+            
+    except Exception as e:
+        logging.error(f"Current WiFi connection fetch error: {e}")
+        return {
+            "connected": False,
+            "connection_details": None,
+            "status": "error",
+            "message": str(e)
+        }
+
+@api_router.post("/wifi/rescan")
+async def rescan_wifi_networks():
+    """Force a fresh WiFi network scan"""
+    try:
+        # Clear any cached results
+        network_scanner.scan_cache.clear()
+        
+        # Perform fresh scan
+        networks = network_scanner.scan_wifi_networks()
+        threats = network_scanner.analyze_wifi_security(networks)
+        
+        await manager.broadcast(json.dumps({
+            "type": "wifi_scan_complete",
             "networks": networks,
             "threats_summary": threats,
             "total_networks": len(networks),
             "threat_count": len(threats)
+        }))
+        
+        return {
+            "status": "success",
+            "message": "WiFi networks rescanned successfully",
+            "networks_found": len(networks),
+            "threats_detected": len(threats)
         }
+        
     except Exception as e:
-        logging.error(f"WiFi networks fetch error: {e}")
-        return {"networks": [], "threats_summary": [], "total_networks": 0, "threat_count": 0}
+        logging.error(f"WiFi rescan error: {e}")
+        return {
+            "status": "error",
+            "message": f"Failed to rescan WiFi networks: {str(e)}"
+        }
 
 # Security Inbox API Endpoints
 @api_router.post("/inbox/add-url")
