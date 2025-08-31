@@ -1104,9 +1104,9 @@ class MalwareScanner:
             )
 
     async def scan_url(self, url: str) -> URLAnalysis:
-        """Scan URL with VirusTotal"""
+        """Scan URL with VirusTotal using thread-safe approach"""
         try:
-            if not self.vt_client:
+            if not self.vt_api_key:
                 return URLAnalysis(
                     url=url,
                     is_malicious=False,
@@ -1116,8 +1116,12 @@ class MalwareScanner:
                 )
             
             # Submit URL for analysis
+            def submit_url():
+                with vt.Client(self.vt_api_key) as client:
+                    return client.scan_url(url)
+            
             analysis = await asyncio.get_event_loop().run_in_executor(
-                None, lambda: self.vt_client.scan_url(url)
+                self.executor, submit_url
             )
             
             # Get URL ID for checking results
@@ -1127,8 +1131,12 @@ class MalwareScanner:
             await asyncio.sleep(5)  # Give some time for analysis
             
             try:
+                def get_url_object():
+                    with vt.Client(self.vt_api_key) as client:
+                        return client.get_object(f"/urls/{url_id}")
+                
                 url_obj = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda: self.vt_client.get_object(f"/urls/{url_id}")
+                    self.executor, get_url_object
                 )
                 
                 return self.parse_url_results(url_obj, url)
