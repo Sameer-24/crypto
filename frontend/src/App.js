@@ -365,7 +365,8 @@ const Dashboard = () => {
     fetchUrlAnalyses();
     fetchInboxEntries();
     fetchWifiNetworks();
-  }, [fetchDevices, fetchAlerts, fetchStats, fetchMalwareAnalyses, fetchUrlAnalyses, fetchInboxEntries, fetchWifiNetworks]);
+    fetchCurrentWifiConnection();
+  }, [fetchDevices, fetchAlerts, fetchStats, fetchMalwareAnalyses, fetchUrlAnalyses, fetchInboxEntries, fetchWifiNetworks, fetchCurrentWifiConnection]);
 
   const getRiskColor = (risk) => {
     if (risk >= 70) return "bg-red-500";
