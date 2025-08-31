@@ -32,7 +32,9 @@ import {
   Download,
   Trash2,
   Plus,
-  Mail
+  Mail,
+  Settings,
+  Info
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
