@@ -308,6 +308,114 @@ class CryptoPulseEnhancedAPITester:
             self.tests_run += 1
             return False
 
+    def test_health_endpoint(self):
+        """Test new /api/health endpoint for keep-alive functionality"""
+        print("\n❤️  Testing Keep-Alive Health Endpoint...")
+        
+        success, response = self.run_test("Health Check Endpoint", "GET", "health", 200, timeout=10)
+        
+        if success and response:
+            # Verify health response structure
+            expected_fields = ['status', 'timestamp', 'uptime', 'service']
+            found_fields = [field for field in expected_fields if field in response]
+            
+            print(f"   Health fields: {found_fields}")
+            
+            if response.get('status') == 'healthy':
+                print("   ✅ Service reports healthy status")
+            else:
+                print(f"   ⚠️  Service status: {response.get('status')}")
+                
+            if response.get('service') == 'CryptoPulse Backend':
+                print("   ✅ Correct service identification")
+            
+            if len(found_fields) == 4:
+                print("   ✅ All expected health fields present")
+            else:
+                print(f"   ⚠️  Only {len(found_fields)}/4 health fields found")
+        
+        return success, response
+
+    def test_wifi_endpoints_quick_verification(self):
+        """Quick verification of core WiFi functionality after keep-alive addition"""
+        print("\n📶 Quick WiFi Functionality Verification...")
+        
+        wifi_endpoints = [
+            ("WiFi Networks Discovery", "GET", "wifi/networks", 200, 15),
+            ("Current WiFi Connection", "GET", "wifi/current-connection", 200, 3), 
+            ("WiFi Rescan", "POST", "wifi/rescan", 200, 20)
+        ]
+        
+        results = []
+        response_times = []
+        
+        for name, method, endpoint, expected_status, timeout_limit in wifi_endpoints:
+            start_time = time.time()
+            success, response = self.run_test(name, method, endpoint, expected_status, timeout=timeout_limit)
+            end_time = time.time()
+            
+            response_time = (end_time - start_time) * 1000  # Convert to milliseconds
+            response_times.append(response_time)
+            
+            print(f"   Response time: {response_time:.1f}ms (limit: {timeout_limit}s)")
+            
+            if response_time < (timeout_limit * 1000):
+                print(f"   ✅ Performance within acceptable range")
+            else:
+                print(f"   ⚠️  Response time exceeds expected range")
+            
+            results.append(success)
+        
+        # Check for performance degradation
+        avg_response_time = sum(response_times) / len(response_times)
+        print(f"\n   Average response time: {avg_response_time:.1f}ms")
+        
+        if avg_response_time < 200:
+            print("   ✅ Excellent performance - no degradation detected")
+        elif avg_response_time < 500:
+            print("   ✅ Good performance - minimal impact from keep-alive")
+        else:
+            print("   ⚠️  Elevated response times - investigate keep-alive impact")
+        
+        return all(results), response_times
+
+    def test_keep_alive_impact_assessment(self):
+        """Assess if keep-alive mechanism affects performance"""
+        print("\n⚡ Keep-Alive Impact Assessment...")
+        
+        # Test multiple rapid requests to check for interference
+        rapid_test_results = []
+        rapid_times = []
+        
+        print("   Testing rapid consecutive requests...")
+        for i in range(5):
+            start_time = time.time()
+            success, _ = self.run_test(f"Rapid Test {i+1}", "GET", "health", 200, timeout=5)
+            end_time = time.time()
+            
+            response_time = (end_time - start_time) * 1000
+            rapid_test_results.append(success)
+            rapid_times.append(response_time)
+            
+            if i < 4:  # Don't sleep after last request
+                time.sleep(0.5)
+        
+        avg_rapid_time = sum(rapid_times) / len(rapid_times)
+        print(f"   Average rapid response time: {avg_rapid_time:.1f}ms")
+        
+        # Check consistency
+        time_variance = max(rapid_times) - min(rapid_times)
+        print(f"   Response time variance: {time_variance:.1f}ms")
+        
+        if time_variance < 100:
+            print("   ✅ Consistent performance - keep-alive not interfering")
+        elif time_variance < 300:
+            print("   ✅ Acceptable variance - minimal keep-alive impact")
+        else:
+            print("   ⚠️  High variance - keep-alive may be causing interference")
+        
+        return all(rapid_test_results), avg_rapid_time
+
     def test_basic_endpoints(self):
         """Test basic CRUD endpoints"""
         print("\n🖥️  Testing Basic Device & Alert Endpoints...")
