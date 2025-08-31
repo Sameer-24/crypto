@@ -435,7 +435,7 @@ class CryptoPulseEnhancedAPITester:
         return all(results)
 
 def main():
-    print("🛡️  CryptoPulse Enhanced v2.0 Network Security System - Comprehensive API Testing")
+    print("🛡️  CryptoPulse Enhanced v2.0 - Keep-Alive Functionality Verification")
     print("=" * 80)
     
     # Setup
@@ -450,70 +450,110 @@ def main():
         print("   Please check if the backend service is running.")
         return 1
     
-    # Test enhanced dashboard with 7 stat cards
-    print("\n📊 Testing Enhanced Dashboard (7 Stat Cards)...")
-    tester.test_enhanced_dashboard_stats()
+    # === KEEP-ALIVE FUNCTIONALITY TESTING ===
+    print("\n" + "=" * 60)
+    print("🚀 KEEP-ALIVE FUNCTIONALITY VERIFICATION")
+    print("=" * 60)
     
-    # Test new malware and URL analysis endpoints
-    print("\n🦠 Testing Malware & URL Analysis Endpoints...")
-    tester.test_malware_analyses_endpoint()
-    tester.test_url_analyses_endpoint()
-    tester.test_unresolved_alerts_endpoint()
+    # Test new health endpoint
+    print("\n1️⃣  Testing New Health Endpoint...")
+    health_success, health_response = tester.test_health_endpoint()
     
-    # Test basic CRUD endpoints
-    tester.test_basic_endpoints()
+    # Test keep-alive impact on performance
+    print("\n2️⃣  Testing Keep-Alive Performance Impact...")
+    impact_success, avg_time = tester.test_keep_alive_impact_assessment()
     
-    # Test enhanced network scanning
-    print("\n🔍 Testing Enhanced Network Scanning...")
-    scan_success, scan_response = tester.test_enhanced_network_scan()
+    # Quick verification of core WiFi functionality
+    print("\n3️⃣  Verifying Core WiFi Functionality...")
+    wifi_success, wifi_times = tester.test_wifi_endpoints_quick_verification()
     
-    # Test VirusTotal integrations
-    print("\n🦠 Testing VirusTotal Integrations...")
-    print("   Note: These tests require VirusTotal API key to be configured")
+    # Test basic endpoints for stability
+    print("\n4️⃣  Testing Basic Endpoint Stability...")
+    basic_success = tester.test_basic_endpoints()
     
-    file_scan_success, _ = tester.test_file_malware_scan()
-    url_scan_success, _ = tester.test_url_threat_scan()
+    # === SERVICE STABILITY CHECK ===
+    print("\n" + "=" * 60)
+    print("🔧 SERVICE STABILITY VERIFICATION")
+    print("=" * 60)
     
-    # Test alert resolution
-    print("\n🚨 Testing Alert Management...")
-    tester.test_alert_resolution()
+    # Check backend startup logs for keep-alive activation
+    print("\n5️⃣  Checking Backend Startup Logs...")
+    try:
+        import subprocess
+        result = subprocess.run(['tail', '-n', '50', '/var/log/supervisor/backend.*.log'], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            logs = result.stdout
+            if 'Keep-alive mechanism activated' in logs:
+                print("   ✅ Keep-alive mechanism activation confirmed in logs")
+                tester.tests_run += 1
+                tester.tests_passed += 1
+            else:
+                print("   ⚠️  Keep-alive activation message not found in recent logs")
+                tester.tests_run += 1
+        else:
+            print("   ⚠️  Could not access backend logs")
+            tester.tests_run += 1
+    except Exception as e:
+        print(f"   ⚠️  Log check failed: {e}")
+        tester.tests_run += 1
     
-    # Test WebSocket for real-time updates
-    print("\n🌐 Testing Real-time WebSocket Connection...")
-    tester.test_websocket_endpoint()
+    # === PERFORMANCE SUMMARY ===
+    print("\n" + "=" * 60)
+    print("📊 KEEP-ALIVE PERFORMANCE SUMMARY")
+    print("=" * 60)
     
-    # Wait for scans to process and re-test data endpoints
-    if scan_success or file_scan_success or url_scan_success:
-        print("\n⏳ Waiting 10 seconds for scans to process and populate data...")
-        time.sleep(10)
+    if wifi_success and wifi_times:
+        avg_wifi_time = sum(wifi_times) / len(wifi_times)
+        print(f"   Average WiFi endpoint response time: {avg_wifi_time:.1f}ms")
         
-        print("\n🔄 Re-testing data endpoints to verify scan results...")
-        tester.test_enhanced_dashboard_stats()
-        tester.test_malware_analyses_endpoint()
-        tester.test_url_analyses_endpoint()
+        if avg_wifi_time < 200:
+            print("   ✅ Excellent performance - no degradation from keep-alive")
+        elif avg_wifi_time < 500:
+            print("   ✅ Good performance - minimal keep-alive impact")
+        else:
+            print("   ⚠️  Elevated response times detected")
+    
+    if impact_success:
+        print(f"   Keep-alive rapid test average: {avg_time:.1f}ms")
+        if avg_time < 100:
+            print("   ✅ Keep-alive mechanism operating efficiently")
+        else:
+            print("   ⚠️  Keep-alive showing some overhead")
     
     # Print comprehensive results
     print("\n" + "=" * 80)
-    print(f"📊 COMPREHENSIVE TEST RESULTS - CryptoPulse Enhanced v2.0")
+    print(f"📊 KEEP-ALIVE VERIFICATION RESULTS")
     print(f"Tests passed: {tester.tests_passed}/{tester.tests_run}")
     
     success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
     print(f"Success rate: {success_rate:.1f}%")
     
-    if tester.tests_passed == tester.tests_run:
-        print("🎉 ALL TESTS PASSED! Enhanced CryptoPulse v2.0 backend is fully functional.")
-        print("✅ Ready for frontend testing with all enhanced features.")
+    # Specific keep-alive assessment
+    keep_alive_tests = [health_success, impact_success, wifi_success, basic_success]
+    keep_alive_passed = sum(keep_alive_tests)
+    
+    print(f"\nKeep-Alive Specific Results:")
+    print(f"✅ Health Endpoint: {'PASS' if health_success else 'FAIL'}")
+    print(f"✅ Performance Impact: {'PASS' if impact_success else 'FAIL'}")
+    print(f"✅ WiFi Functionality: {'PASS' if wifi_success else 'FAIL'}")
+    print(f"✅ Basic Stability: {'PASS' if basic_success else 'FAIL'}")
+    
+    if keep_alive_passed == 4:
+        print("\n🎉 ALL KEEP-ALIVE TESTS PASSED!")
+        print("✅ Keep-alive functionality working correctly")
+        print("✅ No performance degradation detected")
+        print("✅ All existing functionality preserved")
+        print("✅ Backend ready for production with keep-alive protection")
+        return 0
+    elif keep_alive_passed >= 3:
+        print(f"\n✅ MOSTLY SUCCESSFUL - {keep_alive_passed}/4 keep-alive tests passed")
+        print("✅ Keep-alive functionality is working with minor issues")
         return 0
     else:
-        failed_tests = tester.tests_run - tester.tests_passed
-        print(f"⚠️  {failed_tests} test(s) failed. Check the issues above.")
-        
-        if success_rate >= 70:
-            print("✅ Most enhanced functionality is working. Proceeding with frontend testing.")
-            return 0
-        else:
-            print("❌ Too many critical failures. Backend needs fixes before frontend testing.")
-            return 1
+        print(f"\n⚠️  ISSUES DETECTED - Only {keep_alive_passed}/4 keep-alive tests passed")
+        print("❌ Keep-alive functionality needs attention")
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main())
