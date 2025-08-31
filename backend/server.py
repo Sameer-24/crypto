@@ -276,13 +276,14 @@ class EnhancedNetworkScanner:
         return threats_found
 
     def parallel_port_scan(self, ip_address, ports=None):
-        """Optimized parallel port scanning"""
+        """Highly optimized parallel port scanning"""
         if ports is None:
-            ports = [22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 445, 993, 995, 1433, 1521, 3306, 3389, 5432, 5900, 8080, 8443]
+            # Reduced port list for faster scanning - focus on most common ports
+            ports = [22, 23, 25, 53, 80, 135, 139, 443, 445, 993, 995, 3389, 5900, 8080]
         
         def scan_port(port):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(0.5)  # Faster timeout
+            sock.settimeout(0.3)  # Even faster timeout for better performance
             try:
                 result = sock.connect_ex((ip_address, port))
                 return port if result == 0 else None
@@ -291,14 +292,17 @@ class EnhancedNetworkScanner:
             finally:
                 sock.close()
         
-        # Use ThreadPoolExecutor for parallel port scanning
+        # Use optimized ThreadPoolExecutor for port scanning
         open_ports = []
-        with ThreadPoolExecutor(max_workers=20) as executor:
+        with ThreadPoolExecutor(max_workers=30) as executor:  # Increased workers
             future_to_port = {executor.submit(scan_port, port): port for port in ports}
             for future in future_to_port:
-                result = future.result()
-                if result:
-                    open_ports.append(result)
+                try:
+                    result = future.result(timeout=0.5)  # Quick timeout per port
+                    if result:
+                        open_ports.append(result)
+                except:
+                    pass  # Skip timed out ports
         
         return sorted(open_ports)
 
