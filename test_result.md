@@ -217,6 +217,21 @@ backend:
         comment: "✅ KEEP-ALIVE VERIFICATION: WiFi rescan endpoint still working perfectly after keep-alive implementation. Response time 54.6ms (excellent). No performance degradation detected. Rescan successfully completed with proper status messages. All WiFi endpoints maintain excellent performance after keep-alive addition."
 
 frontend:
+  - task: "Frontend Keep-Alive Mechanism"
+    implemented: true
+    working: true
+    file: "App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added frontend keep-alive mechanism that pings /api/health endpoint every 5 minutes to prevent backend from sleeping. Includes initial 30-second delay and proper error handling."
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED: Frontend keep-alive mechanism working correctly. Confirmed implementation in App.js with proper axios calls to /api/health endpoint. 5-minute interval configured (300000ms) with initial 30-second delay. Error handling implemented with console warnings. Keep-alive activation logged: 'Frontend keep-alive mechanism activated'. Integration with backend health endpoint verified."
+        
   - task: "Enhanced WiFi Interface"
     implemented: true
     working: true
