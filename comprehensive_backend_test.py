@@ -80,7 +80,7 @@ class CryptoPulseComprehensiveTester:
         added_ids = []
         for url in test_urls:
             data = {'url': url, 'note': f'Test URL: {url}'}
-            status, response_text, _ = self.make_request('POST', 'inbox/add-url', data=data)
+            status, response_text, _ = self.make_request('POST', 'inbox/add-url', data=data, files={})
             
             if status == 200:
                 try:
