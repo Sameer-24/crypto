@@ -34,6 +34,8 @@ class WiFiBackendVerificationTester:
                 response = requests.get(url, headers=headers, timeout=timeout)
             elif method == 'POST':
                 response = requests.post(url, json=data, headers=headers, timeout=timeout)
+            elif method == 'DELETE':
+                response = requests.delete(url, headers=headers, timeout=timeout)
 
             response_time = (time.time() - start_time) * 1000  # Convert to milliseconds
             
