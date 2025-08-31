@@ -1232,10 +1232,10 @@ class MalwareScanner:
         return hash_sha256.hexdigest()
 
     def __del__(self):
-        """Cleanup VirusTotal client"""
-        if self.vt_client:
+        """Cleanup resources"""
+        if hasattr(self, 'executor'):
             try:
-                self.vt_client.close()
+                self.executor.shutdown(wait=False)
             except:
                 pass
 
