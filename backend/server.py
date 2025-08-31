@@ -985,13 +985,17 @@ class MalwareScanner:
             )
 
     async def submit_file_for_scanning(self, file_path: str, file_hash: str, filename: str, file_size: int):
-        """Submit new file to VirusTotal for scanning"""
+        """Submit new file to VirusTotal for scanning using thread-safe approach"""
         try:
             # Submit file
-            with open(file_path, "rb") as f:
-                analysis = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda: self.vt_client.scan_file(f)
-                )
+            def submit_file():
+                with vt.Client(self.vt_api_key) as client:
+                    with open(file_path, "rb") as f:
+                        return client.scan_file(f)
+            
+            analysis = await asyncio.get_event_loop().run_in_executor(
+                self.executor, submit_file
+            )
             
             # Wait for analysis to complete (with timeout)
             max_wait = 300  # 5 minutes
@@ -999,8 +1003,12 @@ class MalwareScanner:
             
             while wait_time < max_wait:
                 try:
+                    def get_file_object():
+                        with vt.Client(self.vt_api_key) as client:
+                            return client.get_object(f"/files/{file_hash}")
+                    
                     file_obj = await asyncio.get_event_loop().run_in_executor(
-                        None, lambda: self.vt_client.get_object(f"/files/{file_hash}")
+                        self.executor, get_file_object
                     )
                     
                     if hasattr(file_obj, 'last_analysis_stats'):
