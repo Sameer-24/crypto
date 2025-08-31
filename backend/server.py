@@ -569,21 +569,21 @@ class EnhancedNetworkScanner:
                     "message": f"Analyzing {len(devices)} discovered devices..."
                 }))
                 
-                # Process discovered devices in parallel batches
-                batch_size = 5
+                # Process discovered devices in optimized batches
+                batch_size = 3  # Reduced batch size for faster processing
                 for i in range(0, len(devices), batch_size):
                     device_batch = devices[i:i+batch_size]
                     
-                    # Process batch in parallel
+                    # Process batch in parallel with faster timeouts
                     batch_futures = []
                     for device_data in device_batch:
-                        future = self.executor.submit(self.process_single_device, device_data)
+                        future = self.executor.submit(self.process_single_device_fast, device_data)
                         batch_futures.append((future, device_data))
                     
-                    # Collect results
+                    # Collect results with shorter timeout
                     for future, device_data in batch_futures:
                         try:
-                            device_info = future.result(timeout=10)  # 10 second timeout per device
+                            device_info = future.result(timeout=5)  # Reduced timeout to 5 seconds
                             if device_info:
                                 all_devices.append(device_info)
                                 self.known_devices[device_info["mac_address"]] = device_info
@@ -593,9 +593,9 @@ class EnhancedNetworkScanner:
                                     threats_count += 1
                                     
                         except Exception as e:
-                            logging.error(f"Device processing error for {device_data}: {e}")
+                            logging.error(f"Fast device processing error for {device_data}: {e}")
                     
-                    # Update progress
+                    # Update progress more frequently
                     progress = min(50 + int((i / len(devices)) * 30), 80)
                     self.scan_progress = progress
                     await manager.broadcast(json.dumps({
