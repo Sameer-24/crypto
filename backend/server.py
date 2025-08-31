@@ -792,6 +792,81 @@ class EnhancedNetworkScanner:
         
         return quality
 
+    def get_connection_recommendations(self, connection_info):
+        """Get security and performance recommendations for current connection"""
+        recommendations = {
+            'security': [],
+            'performance': [],
+            'general': []
+        }
+        
+        try:
+            # Security recommendations
+            security = connection_info.get('security', '').upper()
+            if 'OPEN' in security or not security:
+                recommendations['security'].append('⚠️ CRITICAL: You are connected to an open network. All traffic can be intercepted.')
+                recommendations['security'].append('🔒 Use a VPN immediately to encrypt your traffic')
+                recommendations['security'].append('🚫 Avoid accessing sensitive accounts or personal information')
+            elif 'WEP' in security:
+                recommendations['security'].append('⚠️ WARNING: WEP encryption is easily broken')
+                recommendations['security'].append('🔒 Switch to a WPA2/WPA3 network if possible')
+            elif 'WPA' in security and 'WPA2' not in security:
+                recommendations['security'].append('⚠️ WPA encryption is deprecated')
+                recommendations['security'].append('🔒 Upgrade to WPA2 or WPA3 if available')
+            elif 'WPA2' in security:
+                recommendations['security'].append('✅ Good: WPA2 encryption is secure')
+                recommendations['security'].append('💡 Consider upgrading to WPA3 for enhanced security')
+            elif 'WPA3' in security:
+                recommendations['security'].append('✅ Excellent: WPA3 provides the strongest security')
+            
+            # DNS recommendations
+            dns_servers = connection_info.get('dns_servers', [])
+            if dns_servers:
+                private_dns = [dns for dns in dns_servers if dns.startswith(('192.168.', '10.', '172.'))]
+                if private_dns:
+                    recommendations['security'].append('💡 Consider using public DNS servers (8.8.8.8, 1.1.1.1) for better security')
+            
+            if connection_info.get('dns_hijacking_suspected'):
+                recommendations['security'].append('🚨 ALERT: DNS hijacking suspected - verify with network administrator')
+            
+            # Performance recommendations
+            signal_strength = connection_info.get('signal_strength', -100)
+            if signal_strength < -70:
+                recommendations['performance'].append('📶 Poor signal strength - move closer to the router')
+                recommendations['performance'].append('🔄 Consider switching to 5GHz band if available')
+            elif signal_strength < -60:
+                recommendations['performance'].append('📶 Signal could be stronger - check for interference')
+            
+            latency = connection_info.get('latency_ms')
+            if latency:
+                if latency > 100:
+                    recommendations['performance'].append(f'🐌 High latency ({latency}ms) - check network congestion')
+                    recommendations['performance'].append('🔧 Try restarting your router or contact ISP')
+                elif latency > 50:
+                    recommendations['performance'].append(f'⏱️ Moderate latency ({latency}ms) - monitor for improvements')
+            
+            # General recommendations
+            connection_issues = connection_info.get('suspected_issues', [])
+            if connection_issues:
+                for issue in connection_issues:
+                    recommendations['general'].append(f'⚠️ {issue}')
+            
+            if not connection_info.get('internet_connectivity'):
+                recommendations['general'].append('🌐 No internet access - check router connection')
+            elif not connection_info.get('dns_working'):
+                recommendations['general'].append('🔍 DNS issues detected - try flushing DNS cache')
+            
+            # Environment-based recommendations
+            recommendations['general'].append('🔍 Regularly scan for rogue access points')
+            recommendations['general'].append('🔒 Keep your device\'s WiFi security up to date')
+            recommendations['general'].append('📱 Disable auto-connect to unknown networks')
+            
+        except Exception as e:
+            logging.error(f"Connection recommendations error: {e}")
+            recommendations['general'].append('❌ Unable to generate recommendations due to analysis error')
+        
+        return recommendations
+
     def analyze_wifi_security(self, networks):
         """Enhanced WiFi security analysis with comprehensive threat detection"""
         threats_found = []
