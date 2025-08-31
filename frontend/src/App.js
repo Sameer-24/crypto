@@ -55,6 +55,9 @@ const Dashboard = () => {
   const [inboxUrl, setInboxUrl] = useState("");
   const [inboxNote, setInboxNote] = useState("");
   const [wifiNetworks, setWifiNetworks] = useState([]);
+  const [currentWifiConnection, setCurrentWifiConnection] = useState(null);
+  const [wifiEnvironmentAnalysis, setWifiEnvironmentAnalysis] = useState({});
+  const [wifiScanning, setWifiScanning] = useState(false);
   const [addingToInbox, setAddingToInbox] = useState(false);
   const fileInputRef = useRef(null);
 
