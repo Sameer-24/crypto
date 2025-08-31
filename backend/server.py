@@ -922,19 +922,14 @@ class WiFiThreatMonitor:
 # Enhanced Malware Scanner with VirusTotal Integration
 class MalwareScanner:
     def __init__(self):
-        self.vt_client = None
-        self.init_virustotal_client()
-
-    def init_virustotal_client(self):
-        """Initialize VirusTotal client"""
-        try:
-            if VIRUSTOTAL_API_KEY:
-                self.vt_client = vt.Client(VIRUSTOTAL_API_KEY)
-                logging.info("VirusTotal client initialized successfully")
-            else:
-                logging.warning("VirusTotal API key not found")
-        except Exception as e:
-            logging.error(f"Failed to initialize VirusTotal client: {e}")
+        self.vt_api_key = VIRUSTOTAL_API_KEY
+        self.executor = ThreadPoolExecutor(max_workers=4)
+        
+    def get_vt_client(self):
+        """Get a new VirusTotal client for thread-safe operations"""
+        if self.vt_api_key:
+            return vt.Client(self.vt_api_key)
+        return None
 
     async def scan_file(self, file_path: str, filename: str) -> MalwareAnalysis:
         """Scan file with VirusTotal"""
