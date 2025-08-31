@@ -650,6 +650,206 @@ const Dashboard = () => {
 
           {/* WiFi Scanner Tab */}
           <TabsContent value="wifi" className="space-y-6">
+            {/* Current Connection Status */}
+            {currentWifiConnection && (
+              <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Wifi className="w-5 h-5 mr-2 text-green-400" />
+                    Current WiFi Connection
+                    <Badge className="ml-2 bg-green-600 text-white">CONNECTED</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Network Details */}
+                    <div className="p-4 rounded-lg bg-black/20 border border-gray-700/50">
+                      <h4 className="text-white font-medium mb-3 flex items-center">
+                        <Network className="w-4 h-4 mr-2" />
+                        Network Details
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">SSID:</span>
+                          <span className="text-white font-medium">{currentWifiConnection.ssid}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Security:</span>
+                          <Badge className={
+                            currentWifiConnection.security?.includes('WPA3') ? 'bg-green-600 text-white' :
+                            currentWifiConnection.security?.includes('WPA2') ? 'bg-blue-600 text-white' :
+                            currentWifiConnection.security?.includes('WPA') ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
+                          }>
+                            {currentWifiConnection.security || 'Unknown'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Signal:</span>
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full mr-2 ${
+                              currentWifiConnection.signal_strength > -50 ? 'bg-green-500' :
+                              currentWifiConnection.signal_strength > -70 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`} />
+                            <span className="text-white">{currentWifiConnection.signal_strength} dBm</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Channel:</span>
+                          <span className="text-white">{currentWifiConnection.channel}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Frequency:</span>
+                          <span className="text-white">{currentWifiConnection.frequency}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Connection Quality */}
+                    <div className="p-4 rounded-lg bg-black/20 border border-gray-700/50">
+                      <h4 className="text-white font-medium mb-3 flex items-center">
+                        <Activity className="w-4 h-4 mr-2" />
+                        Connection Quality
+                      </h4>
+                      {currentWifiConnection.connection_quality && (
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Overall Score:</span>
+                            <span className="text-white font-medium">
+                              {currentWifiConnection.connection_quality.overall_score}/100
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Signal Quality:</span>
+                            <Badge className={
+                              currentWifiConnection.connection_quality.signal_quality === 'Excellent' ? 'bg-green-600 text-white' :
+                              currentWifiConnection.connection_quality.signal_quality === 'Good' ? 'bg-blue-600 text-white' :
+                              currentWifiConnection.connection_quality.signal_quality === 'Fair' ? 'bg-yellow-600 text-white' :
+                              'bg-red-600 text-white'
+                            }>
+                              {currentWifiConnection.connection_quality.signal_quality}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Speed Quality:</span>
+                            <Badge className={
+                              currentWifiConnection.connection_quality.speed_quality === 'Excellent' ? 'bg-green-600 text-white' :
+                              currentWifiConnection.connection_quality.speed_quality === 'Good' ? 'bg-blue-600 text-white' :
+                              currentWifiConnection.connection_quality.speed_quality === 'Fair' ? 'bg-yellow-600 text-white' :
+                              'bg-red-600 text-white'
+                            }>
+                              {currentWifiConnection.connection_quality.speed_quality}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Security:</span>
+                            <Badge className={
+                              currentWifiConnection.connection_quality.security_quality === 'Excellent' ? 'bg-green-600 text-white' :
+                              currentWifiConnection.connection_quality.security_quality === 'Good' ? 'bg-blue-600 text-white' :
+                              currentWifiConnection.connection_quality.security_quality === 'Fair' ? 'bg-yellow-600 text-white' :
+                              'bg-red-600 text-white'
+                            }>
+                              {currentWifiConnection.connection_quality.security_quality}
+                            </Badge>
+                          </div>
+                          {currentWifiConnection.latency_ms && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Latency:</span>
+                              <span className="text-white">{currentWifiConnection.latency_ms} ms</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Network Configuration */}
+                    <div className="p-4 rounded-lg bg-black/20 border border-gray-700/50">
+                      <h4 className="text-white font-medium mb-3 flex items-center">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Network Config
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Local IP:</span>
+                          <span className="text-white">{currentWifiConnection.local_ip}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Gateway:</span>
+                          <span className="text-white">{currentWifiConnection.gateway}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Internet:</span>
+                          <Badge className={currentWifiConnection.internet_connectivity ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}>
+                            {currentWifiConnection.internet_connectivity ? 'Connected' : 'No Access'}
+                          </Badge>
+                        </div>
+                        {currentWifiConnection.dns_servers && currentWifiConnection.dns_servers.length > 0 && (
+                          <div>
+                            <span className="text-gray-400">DNS Servers:</span>
+                            <div className="mt-1">
+                              {currentWifiConnection.dns_servers.map((dns, idx) => (
+                                <div key={idx} className="text-white text-xs">{dns}</div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Security Recommendations */}
+                  {currentWifiConnection.recommendations && (
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Security Recommendations */}
+                      {currentWifiConnection.recommendations.security?.length > 0 && (
+                        <div className="p-4 rounded-lg bg-red-900/20 border border-red-600/30">
+                          <h5 className="text-white font-medium mb-2 flex items-center">
+                            <Shield className="w-4 h-4 mr-2" />
+                            Security
+                          </h5>
+                          <ul className="space-y-1 text-sm">
+                            {currentWifiConnection.recommendations.security.map((rec, idx) => (
+                              <li key={idx} className="text-gray-300">{rec}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Performance Recommendations */}
+                      {currentWifiConnection.recommendations.performance?.length > 0 && (
+                        <div className="p-4 rounded-lg bg-yellow-900/20 border border-yellow-600/30">
+                          <h5 className="text-white font-medium mb-2 flex items-center">
+                            <Zap className="w-4 h-4 mr-2" />
+                            Performance
+                          </h5>
+                          <ul className="space-y-1 text-sm">
+                            {currentWifiConnection.recommendations.performance.map((rec, idx) => (
+                              <li key={idx} className="text-gray-300">{rec}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* General Recommendations */}
+                      {currentWifiConnection.recommendations.general?.length > 0 && (
+                        <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-600/30">
+                          <h5 className="text-white font-medium mb-2 flex items-center">
+                            <Info className="w-4 h-4 mr-2" />
+                            General
+                          </h5>
+                          <ul className="space-y-1 text-sm">
+                            {currentWifiConnection.recommendations.general.map((rec, idx) => (
+                              <li key={idx} className="text-gray-300">{rec}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* WiFi Network Discovery */}
               <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
@@ -659,22 +859,47 @@ const Dashboard = () => {
                       <Wifi className="w-5 h-5 mr-2" />
                       Discovered WiFi Networks ({wifiNetworks.length})
                     </div>
-                    <Button
-                      onClick={fetchWifiNetworks}
-                      size="sm"
-                      className="bg-orange-600 hover:bg-orange-700 text-white"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-1" />
-                      Refresh
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={fetchCurrentWifiConnection}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        disabled={wifiScanning}
+                      >
+                        <Activity className="w-4 h-4 mr-1" />
+                        Check Connection
+                      </Button>
+                      <Button
+                        onClick={rescanWifiNetworks}
+                        size="sm"
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                        disabled={wifiScanning}
+                      >
+                        {wifiScanning ? (
+                          <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                        )}
+                        {wifiScanning ? 'Scanning...' : 'Rescan'}
+                      </Button>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                   {wifiNetworks.map((network, index) => (
-                    <div key={index} className="p-3 rounded-lg bg-black/20 border border-gray-700/50">
+                    <div key={index} className={`p-3 rounded-lg border ${
+                      network.is_current 
+                        ? 'bg-green-900/20 border-green-600/50' 
+                        : 'bg-black/20 border-gray-700/50'
+                    }`}>
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
-                          <p className="text-white font-medium">{network.ssid}</p>
+                          <div className="flex items-center">
+                            <p className="text-white font-medium">{network.ssid}</p>
+                            {network.is_current && (
+                              <Badge className="ml-2 bg-green-600 text-white text-xs">CURRENT</Badge>
+                            )}
+                          </div>
                           <p className="text-gray-400 text-sm">{network.bssid}</p>
                           <p className="text-gray-500 text-xs">{network.security} • {network.frequency}</p>
                         </div>
@@ -683,6 +908,7 @@ const Dashboard = () => {
                             network.threat_level === 'Critical' ? 'bg-red-700 text-white' :
                             network.threat_level === 'High' ? 'bg-red-600 text-white' :
                             network.threat_level === 'Medium' ? 'bg-yellow-600 text-white' :
+                            network.threat_level === 'Low' ? 'bg-blue-600 text-white' :
                             'bg-green-600 text-white'
                           }>
                             {network.threat_level}
@@ -695,65 +921,91 @@ const Dashboard = () => {
                       </div>
                       {network.threats && network.threats.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {network.threats.map((threat, idx) => (
+                          {network.threats.slice(0, 3).map((threat, idx) => (
                             <Badge key={idx} className="bg-red-800 text-white text-xs">
-                              {threat}
+                              {threat.length > 25 ? threat.substring(0, 25) + '...' : threat}
                             </Badge>
                           ))}
+                          {network.threats.length > 3 && (
+                            <Badge className="bg-gray-700 text-white text-xs">
+                              +{network.threats.length - 3} more
+                            </Badge>
+                          )}
                         </div>
                       )}
-                      <div className="mt-2 text-xs text-gray-400">
-                        Channel {network.channel} • Signal: {network.signal_strength} dBm
+                      <div className="mt-2 text-xs text-gray-400 flex justify-between">
+                        <span>Channel {network.channel}</span>
+                        <span>Signal: {network.signal_strength} dBm</span>
+                        {network.risk_score && (
+                          <span>Risk: {network.risk_score}/100</span>
+                        )}
                       </div>
                     </div>
                   ))}
-                  {wifiNetworks.length === 0 && (
+                  {wifiNetworks.length === 0 && !wifiScanning && (
                     <div className="text-center py-8 text-gray-400">
                       <Wifi className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No WiFi networks detected</p>
-                      <p className="text-sm">Click refresh to scan for networks</p>
+                      <p className="text-sm">Click rescan to search for networks</p>
+                    </div>
+                  )}
+                  {wifiScanning && (
+                    <div className="text-center py-8 text-gray-400">
+                      <RefreshCw className="w-12 h-12 mx-auto mb-4 opacity-50 animate-spin" />
+                      <p>Scanning for WiFi networks...</p>
+                      <p className="text-sm">This may take a few moments</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* WiFi Security Tips */}
+              {/* Enhanced WiFi Security Assessment */}
               <Card className="bg-black/30 border-gray-700 backdrop-blur-lg">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <ShieldAlert className="w-5 h-5 mr-2" />
-                    WiFi Security Assessment
+                    Environment Security Analysis
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 rounded-lg bg-red-900/20 border border-red-600/30">
                       <div>
-                        <p className="text-white font-medium">Open Networks</p>
-                        <p className="text-gray-400 text-sm">Unencrypted connections</p>
+                        <p className="text-white font-medium">Critical Threats</p>
+                        <p className="text-gray-400 text-sm">Immediate attention required</p>
                       </div>
                       <Badge className="bg-red-600 text-white">
-                        {wifiNetworks.filter(n => n.security === 'Open').length}
+                        {wifiEnvironmentAnalysis.critical_threats || 0}
                       </Badge>
                     </div>
                     
                     <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-900/20 border border-yellow-600/30">
                       <div>
-                        <p className="text-white font-medium">Weak Encryption</p>
-                        <p className="text-gray-400 text-sm">WEP/WPA networks</p>
+                        <p className="text-white font-medium">High Risk Networks</p>
+                        <p className="text-gray-400 text-sm">Avoid connection</p>
                       </div>
                       <Badge className="bg-yellow-600 text-white">
-                        {wifiNetworks.filter(n => ['WEP', 'WPA'].includes(n.security)).length}
+                        {wifiEnvironmentAnalysis.high_threats || 0}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-orange-900/20 border border-orange-600/30">
+                      <div>
+                        <p className="text-white font-medium">Open Networks</p>
+                        <p className="text-gray-400 text-sm">Unencrypted connections</p>
+                      </div>
+                      <Badge className="bg-orange-600 text-white">
+                        {wifiEnvironmentAnalysis.open_networks || 0}
                       </Badge>
                     </div>
                     
                     <div className="flex items-center justify-between p-3 rounded-lg bg-green-900/20 border border-green-600/30">
                       <div>
-                        <p className="text-white font-medium">Secure Networks</p>
-                        <p className="text-gray-400 text-sm">WPA2/WPA3 encryption</p>
+                        <p className="text-white font-medium">Networks Scanned</p>
+                        <p className="text-gray-400 text-sm">Total discovered</p>
                       </div>
                       <Badge className="bg-green-600 text-white">
-                        {wifiNetworks.filter(n => ['WPA2-PSK', 'WPA3', 'WPA2'].includes(n.security)).length}
+                        {wifiEnvironmentAnalysis.total_scanned || 0}
                       </Badge>
                     </div>
                   </div>
@@ -761,12 +1013,26 @@ const Dashboard = () => {
                   <div className="pt-4 border-t border-gray-600">
                     <h4 className="text-white font-medium mb-2">Security Recommendations</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• {currentWifiConnection ? '✅ Connected to WiFi network' : '❌ No active WiFi connection'}</li>
                       <li>• Avoid connecting to open WiFi networks</li>
                       <li>• Use VPN on public networks</li>
                       <li>• Verify network names with venue staff</li>
                       <li>• Disable auto-connect features</li>
-                      <li>• Use mobile hotspot when possible</li>
+                      <li>• Monitor for evil twin attacks</li>
+                      <li>• Keep WiFi security protocols updated</li>
                     </ul>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-600">
+                    <Button
+                      onClick={fetchWifiNetworks}
+                      size="sm"
+                      className="w-full bg-gray-600 hover:bg-gray-700 text-white"
+                      disabled={wifiScanning}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${wifiScanning ? 'animate-spin' : ''}`} />
+                      {wifiScanning ? 'Refreshing Analysis...' : 'Refresh Analysis'}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
