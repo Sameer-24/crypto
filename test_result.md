@@ -173,6 +173,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ PASSED: All WiFi API endpoints working perfectly. /api/wifi/rescan endpoint functional with 63.9ms response time. Rescan successfully initiated/completed with proper status messages. All endpoints meet performance requirements: Networks <15s, Current Connection <3s, Rescan <20s. Error handling working correctly (404/405 responses). Data integrity checks passed."
+      - working: true
+        agent: "testing"
+        comment: "✅ RE-VERIFIED AFTER RESTART: All WiFi API endpoints confirmed working after service restart. /api/wifi/rescan endpoint functional with 50.6ms response time (excellent). Rescan successfully initiated/completed with proper status messages ('success' status). All endpoints meet performance requirements: Networks 130.2ms (<15s), Current Connection 54.3ms (<3s), Rescan 50.6ms (<20s). Error handling working (404 responses verified). Data integrity checks passed."
 
 frontend:
   - task: "Enhanced WiFi Interface"
