@@ -2231,6 +2231,16 @@ security_inbox = SecurityInbox(malware_scanner)
 async def root():
     return {"message": "CryptoPulse Enhanced Network Security System", "features": ["Network Scanning", "Malware Analysis", "DoS Detection", "WiFi Threat Monitoring", "URL Scanning"]}
 
+@api_router.get("/health")
+async def health_check():
+    """Health check endpoint to keep service alive"""
+    return {
+        "status": "healthy", 
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "uptime": "running",
+        "service": "CryptoPulse Backend"
+    }
+
 @api_router.post("/scan/network")
 async def start_enhanced_network_scan():
     """Start enhanced network scan with threat detection"""
