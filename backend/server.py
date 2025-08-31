@@ -2629,11 +2629,42 @@ async def enhanced_auto_scan_task():
         except Exception as e:
             logger.error(f"Enhanced auto-scan error: {e}")
 
+# Keep-alive task to prevent service from sleeping on Render
+async def keep_alive_task():
+    """Background task to ping health endpoint every 5 minutes to prevent sleeping"""
+    await asyncio.sleep(60)  # Wait 1 minute before starting
+    
+    while True:
+        try:
+            await asyncio.sleep(300)  # 5 minutes
+            
+            # Get the current app URL from environment or use localhost
+            base_url = os.environ.get('BACKEND_URL', 'http://localhost:8001')
+            health_url = f"{base_url}/api/health"
+            
+            async with aiohttp.ClientSession() as session:
+                try:
+                    async with session.get(health_url, timeout=30) as response:
+                        if response.status == 200:
+                            logger.info(f"✅ Keep-alive ping successful: {health_url}")
+                        else:
+                            logger.warning(f"⚠️ Keep-alive ping returned status {response.status}")
+                except asyncio.TimeoutError:
+                    logger.warning("⚠️ Keep-alive ping timeout")
+                except Exception as ping_error:
+                    logger.warning(f"⚠️ Keep-alive ping failed: {ping_error}")
+                    
+        except Exception as e:
+            logger.error(f"Keep-alive task error: {e}")
+
 # Start enhanced background task
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting CryptoPulse Enhanced Security System...")
+    logger.info("🚀 Starting background monitoring tasks...")
     asyncio.create_task(enhanced_auto_scan_task())
+    asyncio.create_task(keep_alive_task())
+    logger.info("✅ Keep-alive mechanism activated - backend will ping itself every 5 minutes to prevent sleeping")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
